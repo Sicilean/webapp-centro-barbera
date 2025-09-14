@@ -1,0 +1,8 @@
+<h1>Risultati da inserire</h1>
+<p>Elenco l'elenco delle variabili che devono essere inserite</p>
+<%=  render :active_scaffold => 'variabile_rapporto_items',
+            :constraints => {:variabile_tipo => 'funzione'},
+            #:constraints => {:valore_numero => 50},
+            :label => 'Risultati da inserire',
+            :sort => "rapporto",
+            :sort_direction => "DESC" %>

@@ -1,0 +1,24 @@
+<h1>Listing prova_rapporto_items</h1>
+
+<table>
+  <tr>
+    <th>Prova</th>
+    <th>Rapporto</th>
+    <th>Prezzo</th>
+  </tr>
+
+<% @prova_rapporto_items.each do |prova_rapporto_item| %>
+  <tr>
+    <td><%=h prova_rapporto_item.prova_id %></td>
+    <td><%=h prova_rapporto_item.rapporto_id %></td>
+    <td><%=h prova_rapporto_item.prezzo %></td>
+    <td><%= link_to 'Show', prova_rapporto_item %></td>
+    <td><%= link_to 'Edit', edit_prova_rapporto_item_path(prova_rapporto_item) %></td>
+    <td><%= link_to 'Destroy', prova_rapporto_item, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New prova_rapporto_item', new_prova_rapporto_item_path %>

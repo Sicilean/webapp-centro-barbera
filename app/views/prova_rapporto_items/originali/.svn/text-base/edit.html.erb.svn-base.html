@@ -1,0 +1,24 @@
+<h1>Editing prova_rapporto_item</h1>
+
+<% form_for(@prova_rapporto_item) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :prova_id %><br />
+    <%= f.text_field :prova_id %>
+  </p>
+  <p>
+    <%= f.label :rapporto_id %><br />
+    <%= f.text_field :rapporto_id %>
+  </p>
+  <p>
+    <%= f.label :prezzo %><br />
+    <%= f.text_field :prezzo %>
+  </p>
+  <p>
+    <%= f.submit 'Update' %>
+  </p>
+<% end %>
+
+<%= link_to 'Show', @prova_rapporto_item %> |
+<%= link_to 'Back', prova_rapporto_items_path %>

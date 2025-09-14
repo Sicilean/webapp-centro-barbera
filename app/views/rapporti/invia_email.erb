@@ -1,0 +1,57 @@
+<h2>Anteprima email</h2>
+<br/>
+
+<%  form_tag  "/rapporti/invia_email" do %>
+  <strong>Da:</strong> <%= @mittente_default %><br/>
+  <strong>A:</strong>   <%= text_field_tag :destinatario_corretto, (h @destinatario_default), {:maxlength => 250, :size => 45} %>
+ <br/>
+ <%= "<strong>Bcc:</strong> #{@indirizzo_bcc}" unless @indirizzo_bcc.nil? %>
+  <br/>
+  <br/>
+  <strong>Oggetto:</strong> <%= text_field_tag :oggetto_corretto, (h @oggetto_default), {:maxlength => 150, :size => 80} %><br/>
+  <br/>
+  <strong>Allegati:</strong> 
+  <div style="padding-left: 6em;" >
+    <% if @rapporto %>
+      <% if @rapporto.rdp_pronto? %>
+        <%= hidden_field_tag :id, @rapporto.id %>
+        <%=  "#{link_to((image_tag 'pdf_icon.gif', :border => 0), :controller => :rapporti, :action => :mostra_pdf, :id => @rapporto.id)}" %>
+        del <%= link_to "Rdp n. #{@rapporto.numero}", @rapporto %> (<%= link_to "Campione Rc n.#{@rapporto.campione.numero}", @rapporto.campione %>)<br/>
+      <% end %>
+    <% else  %>
+      <% unless @rapporti_email_rdp.nil? %>
+        <% @rapporti_email_rdp.each do |rapporto| %>
+          <% if rapporto.rdp_pronto? %>
+            <%= check_box_tag 'email_rdp_array[]', rapporto.id , true, {:style => "display:none;"} %>
+            <%=  "#{link_to((image_tag 'pdf_icon.gif', :border => 0), :controller => :rapporti, :action => :mostra_pdf, :id => rapporto.id)}" %>
+            <%= link_to "Rdp n. #{rapporto.numero}", rapporto %> (<%= link_to "Campione Rc n.#{rapporto.campione.numero}", rapporto.campione %>)<br/>
+          <% else %>
+            [errore:  <%= link_to "Rdp n. #{rapporto.numero}", rapporto %> (<%= link_to "Campione Rc n.#{rapporto.campione.numero}", rapporto.campione %>) NON pronto]<br />
+          <% end %>
+        <% end %>
+      <% end %>
+      <% unless @rapporti_email_anteprima.nil? %>
+        <br />
+        <%=  "#{ link_to((image_tag 'pdf_icon.gif', :border => 0), @link_anteprima) }" %>
+        Anteprima riassuntiva dei rapporti:
+        <div style="padding-left: 5em;" >
+          <ul style="margin-top: 0em;">
+          <% @rapporti_email_anteprima.each do |rapporto| %>
+            <li>
+            <%= check_box_tag 'email_anteprima_array[]', rapporto.id, true, {:style => "display:none;"} %>
+            <%= link_to rapporto.to_label, rapporto %> (campione <%= link_to "Rc n.#{rapporto.campione.numero}", rapporto.campione %>)<br />
+            </li>
+          <% end %>
+          </ul>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+
+  <br/>
+  <strong>Testo:</strong><br/>
+  <%= text_area_tag :testo_corretto, ( @testo_default), { :cols => 100, :rows => 12 }%><br/>
+  <br/>
+  <br/>
+<%= submit_tag 'Invia' %> <!-- attenzione, se cambi 'Invia', cambialo anche nel controller -->
+<% end %>

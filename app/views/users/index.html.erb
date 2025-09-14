@@ -1,0 +1,40 @@
+<br />
+<h1>Utenti</h1>
+<br />
+
+<br />
+<div class="active-scaffold blue-theme">
+  <div class="active-scaffold-header">
+    <table border ="1" cellpadding="6" cellspacing="0">
+      <tr>
+        <th>Nome</th>
+        <th>Email</th>
+        <th>Ruolo</th>
+        <th><%= link_to 'Nuovo Utente', new_user_path %></th>
+      </tr>
+      <% even_odd = 0 %>
+      <% @users.each do |user| %>
+        <%
+        even_odd = 1 - even_odd
+        if even_odd == 0
+           record_class = "record even-record"
+        else
+           record_class = "record"
+        end
+        %>
+          <tr class="<%= record_class %>">
+          <td><%=h user.nome %></td>
+          <td><%=h user.email %></td>
+          <td>
+            <%=h user.role_in_words %> <br />
+            <%= link_to user.cliente.nome, user.cliente unless user.cliente.nil? %>
+          </td>
+          <td>
+            <%= link_to 'Modifica', edit_user_path(user) %> &nbsp;
+            <%= link_to 'Elimina', user, :confirm => 'Sei sicuro?', :method => :delete %></td>
+        </tr>
+      <% end %>
+    </table>
+  </div>
+</div>
+<br />

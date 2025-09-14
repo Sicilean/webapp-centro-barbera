@@ -1,0 +1,40 @@
+<h1>Listing variabili</h1>
+
+<table>
+  <tr>
+    <th>Udm item</th>
+    <th>Nome</th>
+    <th>Nome esteso</th>
+    <th>Simbolo</th>
+    <th>Funzione</th>
+    <th>Tipo</th>
+    <th>Min</th>
+    <th>Max</th>
+    <th>Decimali</th>
+    <th>Forza zero</th>
+    <th>Note</th>
+  </tr>
+
+<% @variabili.each do |variabile| %>
+  <tr>
+    <td><%=h variabile.udm_item_id %></td>
+    <td><%=h variabile.nome %></td>
+    <td><%=h variabile.nome_esteso %></td>
+    <td><%=h variabile.simbolo %></td>
+    <td><%=h variabile.funzione %></td>
+    <td><%=h variabile.tipo %></td>
+    <td><%=h variabile.min %></td>
+    <td><%=h variabile.max %></td>
+    <td><%=h variabile.decimali %></td>
+    <td><%=h variabile.forza_zero %></td>
+    <td><%=h variabile.note %></td>
+    <td><%= link_to 'Show', variabile %></td>
+    <td><%= link_to 'Edit', edit_variabile_path(variabile) %></td>
+    <td><%= link_to 'Destroy', variabile, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New variabile', new_variabile_path %>

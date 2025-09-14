@@ -1,0 +1,212 @@
+<h1>Cerca Fatture</h1>
+<br  />
+<% form_tag  do %>
+
+  Fatture con data emissione negli ultimi
+  <%= select_tag 'giorni'           ,options_for_select(@options_for_giorni         , session[:giorni]          ) -%>,
+  oppure dal
+  <%= date_select(:da, 'data', :start_year => 2009, :end_year => DateTime.now.year, :use_short_month => true, :include_blank => true) %>
+  al
+  <%= date_select(:a,  'data', :start_year => 2009, :end_year => DateTime.now.year, :use_short_month => true, :include_blank => true) %>
+  <br/>
+  del cliente
+
+  <%= select_tag 'cliente_id'       ,options_for_select(@options_for_cliente_id     , session[:cliente_id]      ) %><br/>
+  
+  e <%= select_tag 'da_pagare'     ,options_for_select(@options_for_da_pagare   , session[:da_pagare]      ) %> <br/>
+  <br/>
+
+  <%= submit_tag 'Cerca' %>
+<% end %>
+<br/>
+
+<% unless @fatture.empty? %>
+
+    <b>N. fatture</b>: <%= @fatture.size %><br />
+    <b>Totale fatture</b>: <%= formatta_prezzo @sommatoria_prezzo_totale %><br/>
+
+  <%=  render :active_scaffold => "fatture", :conditions => ['`fatture`.id IN (?)', @fatture_da_mostrare] %>
+
+<% end %>
+<% unless true #@fatture.empty?  %>
+
+  <% if session[:tipo_invio] == 'conteggio' %>
+    <b>N. fatture</b>: <%= @fatture.size %><br />
+    <table border="1" cellpadding="3" cellspacing="0">
+      <tr>
+        <td><b>Tipologia</b> (n. prove di base)</td>
+        <th>Quantità</th>
+        <%= "<th>Prezzo Listino attuale</th>" if current_user.is_admin? %>
+        <th>forfeit?</th>
+        <%= "<th>Quantità x Prezzo</th>" if current_user.is_admin? %>
+      </tr>
+      <% sommatoria_quantita = 0 %>
+      <% sommatoria_quantita_per_prezzo_tipologie = 0 %>
+      <% @conteggio_tipologie.keys.each do |key| %>
+        <% @tipologia = Tipologia.find(key) %>
+        <tr>
+          <td><%= link_to @tipologia.nome, @tipologia %> (<%=  @tipologia.prove.size %>)</td>
+          <td style="text-align:right;"><%= @conteggio_tipologie[key] %></td>
+          <% if current_user.is_admin? %>
+            <td style="text-align:right;"><%= "#{formatta_prezzo_senza_euro @tipologia.prezzo_automatico} " if current_user.is_admin? %></td>
+          <% end %>
+          <td><%= " <i>forfeit</i>" if @tipologia.forfeit %></td>
+          <% if current_user.is_admin? %>
+            <td style="text-align:right;"><%= formatta_prezzo_senza_euro(@conteggio_tipologie[key] * @tipologia.prezzo_automatico) %></td>
+          <% end %>
+        <% sommatoria_quantita +=  @conteggio_tipologie[key] %>
+          <% sommatoria_quantita_per_prezzo_tipologie +=  @conteggio_tipologie[key] * @tipologia.prezzo_automatico %>
+        </tr>
+      <% end %>
+      <tr>
+        <td style="text-align:right;">Totale</td>
+        <td style="text-align:right;"><b><%= sommatoria_quantita %></b></td>
+        <td></td>
+        <% if current_user.is_admin? %>
+          <td></td>
+          <td style="text-align:right;"><b><%= formatta_prezzo_senza_euro sommatoria_quantita_per_prezzo_tipologie %></b></td>
+        <% end %>
+      </tr>
+    </table>
+    <br/>
+
+    <b>Prove aggiuntive: </b>    <br/>
+    <i><small>Le prove aggiuntive sono le prove manualmente aggiunte ad un fattura dall'operatore oltre a quelle 'di base', cioè automaticamente incluse in una tipologia. </i>   </small><br/>
+
+    <br/>
+    <table border="1" cellpadding="3" cellspacing="0">
+      <tr>
+        <th>Prova aggiuntiva</th>
+        <th>Quantità</th>
+        <% if current_user.is_admin? %>
+          <th>Prezzo Listino attuale</th>
+          <th>Quantità x Prezzo</th>
+        <% end %>
+      </tr>
+      <% sommatoria_quantita = 0 %>
+      <% sommatoria_quantita_per_prezzo_prove = 0 %>
+      <% @conteggio_prove_aggiuntive.keys.each do |key| %>
+        <% @prova = Prova.find(key) %>
+        <tr>
+          <td><%= link_to @prova.nome, @prova %></td>
+          <td style="text-align:right;"><%= @conteggio_prove_aggiuntive[key] %></td>
+          <% if current_user.is_admin? %>
+            <td style="text-align:right;">
+              <%= formatta_prezzo_senza_euro @prova.prezzo %>
+            </td>
+            <td style="text-align:right;"><%=  formatta_prezzo_senza_euro(@conteggio_prove_aggiuntive[key] * @prova.prezzo) %></td>
+          <% end %>
+          <% sommatoria_quantita += @conteggio_prove_aggiuntive[key] %>
+          <% sommatoria_quantita_per_prezzo_prove +=  @conteggio_prove_aggiuntive[key] * @prova.prezzo %>
+        </tr>
+      <% end %>
+      <tr>
+        <td style="text-align:right; ">Totale</td>
+        <td style="text-align:right;"><b><%= sommatoria_quantita %></b></td>
+        <% if current_user.is_admin? %>
+          <td></td>
+          <td style="text-align:right;"><b><%= formatta_prezzo_senza_euro sommatoria_quantita_per_prezzo_prove %></b></td>
+        <% end %>
+      </tr>
+    </table>
+    <br />
+    <% if current_user.is_admin? %>
+      <table border="1" cellpadding="3" cellspacing="0">
+            <tbody>
+              <tr>
+                <td>Totale prezzi con attuale listino (come da tabelle qui sopra)</b> = <b><%= formatta_prezzo_senza_euro sommatoria_quantita_per_prezzo_tipologie %> +
+                                                <%= formatta_prezzo_senza_euro sommatoria_quantita_per_prezzo_prove %></b> = </td>
+                <td><b><%=  formatta_prezzo_senza_euro (sommatoria_quantita_per_prezzo_tipologie+sommatoria_quantita_per_prezzo_prove) %></b></td>
+              </tr>
+              <tr>
+                <td>Sommatoria analitica prezzi (effettivi) dei fatture</b></td>
+                <td><b><span style="color:green;"><%= formatta_prezzo_senza_euro @sommatoria_prezzo_totale %></span></b> (*)</td>
+              </tr>
+            </tbody>
+          </table>
+      <i> (*) I due importi qui sopra non necessariamente conincidono, in quanto nel tempo il prezzo di listino può essere variato: vecchi fatture possono conservano i vecchi prezzi.</i><br />
+
+    <% end %>
+    <% if current_user.is_admin? %>
+      <br/>
+      <br/>
+      <h2>Elenco analitico dei fatture con <span style="color:green;">prezzi effettivi</span> (in <span style="color:green;">verde</span>) e <span style="color: #999;">prezzi di listino</span></h2>
+      <br />
+      (**) Qualora i <span style="color:green;">prezzi effettivi</span> siano diversi dal prezzo di listino, quest'ultimo viene indicato con (**)
+    <% end %>
+  <% end %>
+  <%  if session[:tipo_invio] == 'sms' || 'email'  %>
+    <form action='<%= "/fatture/invia_#{session[:tipo_invio]}" -%>' method="post">
+  <% end %>
+
+  <br />
+  <div class="active-scaffold blue-theme">
+    <div class="active-scaffold-header">
+      <table border ="1" cellpadding="6" cellspacing="0">
+        <tr>
+          <th colspan="4">Links</th>
+          <th>Campione</th>
+          <th>Tipologia</th>
+          <th>Data<br/> stampa<br/> Rdp</th>
+          <th>Cliente</th>
+          <th>Status</th>
+          <th>Data<br/> richiesta</th>
+          <th>Data<br/> campione</th>
+          <th>Data<br/> scadenza</th>
+          <th>Fattura</th>
+          <%= "<th>Data invio email</th><th width='140px'>#{submit_tag 'Invia email'}</th>" if session[:tipo_invio] == 'email' %>
+          <%= "<th>Data invio sms  </th><th>#{submit_tag 'Invia sms'}  </th>" if session[:tipo_invio] == 'sms' %>
+          <%= "<th>Conteggio</th>" if session[:tipo_invio] == 'conteggio' %>
+        </tr>
+        <% even_odd = 0 %>
+        <% @fatture.each do |fattura| %>
+          <%
+          even_odd = 1 - even_odd
+          if even_odd == 0
+             record_class = "record even-record"
+          else
+             record_class = "record"
+          end
+          %>
+            <tr class="<%= record_class %>">
+              <td>
+                <%= link_to 'Modifica', edit_fattura_path(fattura) %> &nbsp;
+              </td>
+              <td><%= dati_fattura_link_column(fattura) %></td>
+              <td><%= stampa_dati_link_column(fattura) %></td>
+              <td><%= stampa_fattura_link_column(fattura) %></td>
+              <td><%= link_to fattura.campione.to_label,  edit_campione_path(fattura.campione) %></td>
+              <td><%= fattura.tipologia.to_label %></td>
+              <td><%= fattura.data_stampa.strftime("%d-%m-%y") unless fattura.data_stampa.nil? %></td>
+              <td><%= link_to fattura.campione.cliente.nome, fattura.campione.cliente %></td>
+              <td><%= fattura.status %></td>
+              <td><%= fattura.data_richiesta.strftime("%d-%m-%y") unless fattura.data_richiesta.nil? %></td>
+              <td><%= fattura.campione.data.strftime("%d-%m-%y") unless fattura.campione.data.nil? %></td>
+              <td><%= I18n.l fattura.data_scadenza unless fattura.data_scadenza.nil? %></td>
+              <td><%= fattura_link_column(fattura) %> </td>
+              <% if session[:tipo_invio] == 'email' %>
+                <td><%= data_invio_email_column(fattura)%></td>
+                <td>
+                  <%= check_box_tag 'email_anteprima_array[]', fattura.id %>Anteprima
+                  <% if fattura.pdf_esiste? %>
+                    <%= check_box_tag 'email_rdp_array[]', fattura.id %>Rpd
+                  <% end %>
+                </td>
+              <% end %>
+              <%= "<td>#{data_invio_sms_column(fattura)}  </td><td>#{check_box_tag 'sms_array[]'  , fattura.id}</td>" if session[:tipo_invio] == 'sms' %>
+              <% if session[:tipo_invio] == 'conteggio' %>
+                <td>
+                 <%= render :partial => 'box_riassuntivo_conteggio_fattura', :locals => { :fattura =>  fattura } %>
+                </td>
+              <% end %>
+            </tr>
+        <% end %>
+
+      </table>
+    </div>
+  </div>
+  <br />
+  <% if session[:tipo_invio] == 'sms' || 'email' %>
+   </form>
+  <% end %>
+<% end %>

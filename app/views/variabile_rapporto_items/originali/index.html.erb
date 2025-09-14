@@ -1,0 +1,30 @@
+<h1>Listing variabile_rapporto_items</h1>
+
+<table>
+  <tr>
+    <th>Variabile</th>
+    <th>Rapporto</th>
+    <th>Data</th>
+    <th>Valore numero</th>
+    <th>Valore testo</th>
+    <th>Incertezza di misura</th>
+  </tr>
+
+<% @variabile_rapporto_items.each do |variabile_rapporto_item| %>
+  <tr>
+    <td><%=h variabile_rapporto_item.variabile_id %></td>
+    <td><%=h variabile_rapporto_item.rapporto_id %></td>
+    <td><%=h variabile_rapporto_item.data %></td>
+    <td><%=h variabile_rapporto_item.valore_numero %></td>
+    <td><%=h variabile_rapporto_item.valore_testo %></td>
+    <td><%=h variabile_rapporto_item.incertezza_di_misura %></td>
+    <td><%= link_to 'Show', variabile_rapporto_item %></td>
+    <td><%= link_to 'Edit', edit_variabile_rapporto_item_path(variabile_rapporto_item) %></td>
+    <td><%= link_to 'Destroy', variabile_rapporto_item, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New variabile_rapporto_item', new_variabile_rapporto_item_path %>

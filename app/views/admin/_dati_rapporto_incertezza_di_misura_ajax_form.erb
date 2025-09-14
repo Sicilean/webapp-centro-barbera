@@ -1,0 +1,18 @@
+<% variabile_rapporto_item = @variabile_rapporto_item if variabile_rapporto_item.nil? %>
+<strong>
+  <%=h variabile_rapporto_item.incertezza_di_misura %>
+</strong>
+<% unless variabile_rapporto_item.rapporto.fatturato? %>
+
+  <% form_remote_tag :update => "update_div_incertezza_di_misura_rapporto_#{variabile_rapporto_item.id}",
+    :url => {:action => '_dati_rapporto_incertezza_di_misura_ajax_form', :id => variabile_rapporto_item.id} do %>
+        <%= text_field_tag :incertezza_di_misura, variabile_rapporto_item.incertezza_di_misura,
+                  :maxlength => 90,
+                  :size => 40,
+                  :value => variabile_rapporto_item.incertezza_di_misura %>
+
+    <%= submit_tag 'Salva' %>
+  <% end %>
+
+<% end %>
+

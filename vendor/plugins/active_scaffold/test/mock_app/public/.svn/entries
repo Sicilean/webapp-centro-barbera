@@ -1,0 +1,71 @@
+9
+
+dir
+678
+svn://svn.iperserver.it/barbera.iperserver.it/trunk/vendor/plugins/active_scaffold/test/mock_app/public
+svn://svn.iperserver.it/barbera.iperserver.it
+
+
+
+2010-06-12T07:48:03.729319Z
+440
+dante
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+27e177e0-202c-4f32-a523-1304398c3855
+
+images
+dir
+
+javascripts
+dir
+
+blank.html
+file
+
+
+
+
+2010-06-12T08:52:59.000000Z
+220be1cffa3bcc695a214e4a693ea0f9
+2010-06-12T07:48:03.729319Z
+440
+dante
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1491
+
+stylesheets
+dir
+

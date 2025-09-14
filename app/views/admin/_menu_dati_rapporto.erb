@@ -1,0 +1,31 @@
+[ Mostra dati: 
+<%= link_to 'da inserire', :filtro => 'solo_dati_input' %> |
+<%= link_to 'da inserire (solo mancanti)', :filtro => 'solo_dati_mancanti' %> |
+<%= link_to 'visualizzati nel rapporto', :filtro => 'solo_dati_visualizzati' %> |
+<%= link_to 'tutti', :filtro => '' %> ]
+<%= link_to '.', :filtro => 'solo_funzioni', :modifica => 'funzione' %>
+<br />
+[
+<%= link_to 'Modifica Rapporto', :controller=> 'rapporti', :action => 'edit', :id => @rapporto.id %> |
+<%= link_to 'Modifica Campione', :controller=> 'campioni', :action => 'edit', :id => @rapporto.campione.id %> |
+<%= link_to 'Ricalcola', :filtro => params[:filtro], :azione => 'ricalcola' %> |
+<%= link_to 'Stampa', :controller=> 'rapporti', :action => 'stampa_dati', :id => @rapporto.id %> |
+<%=
+    if @rapporto.completo?
+        link_anteprima = '/rapporti/anteprima_risultati?'
+        link_anteprima += "rapporty_array[]=#{@rapporto.id}&"
+        link_anteprima_pdf = link_anteprima + 'format=pdf'
+        "#{link_to 'Anteprima', link_anteprima_pdf}"+
+        "#{link_to((image_tag 'pdf_icon.gif', :border => 0), link_anteprima_pdf)}"
+    end %> |
+
+<% if @rapporto.pdf_esiste? %>
+  <%= link_to 'Rdp vuoto',           :controller =>  :rapporti, :action => :rdp, :id => params[:id], :format => :pdf, :stampa_modello_vuoto => 1 %> |
+
+  <%= link_to 'Rigenera Rdp', url_for(:controller =>  :rapporti, :action => :crea_pdf, :id => params[:id]),  :confirm => "Sei sicuro? questo comporterà la cancellazione del pdf precedente" %> |
+  <%= link_to 'Mostra Rdp',               :controller =>  :rapporti, :action => :mostra_pdf, :id => params[:id] %>
+  <%= link_to((image_tag 'pdf_icon.gif', :border => 0), :controller =>  :rapporti, :action => :mostra_pdf, :id => params[:id]) %>
+<% else %>
+  <%= link_to 'Crea Rdp', :controller =>  :rapporti, :action => :crea_pdf, :id => params[:id] %>
+<% end %>
+]

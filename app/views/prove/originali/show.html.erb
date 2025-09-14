@@ -1,0 +1,38 @@
+<p>
+  <b>Matrice:</b>
+  <%=h @prova.matrice_id %>
+</p>
+
+<p>
+  <b>Nome:</b>
+  <%=h @prova.nome %>
+</p>
+
+<p>
+  <b>Nome esteso:</b>
+  <%=h @prova.nome_esteso %>
+</p>
+
+<p>
+  <b>Metodo di prova:</b>
+  <%=h @prova.metodo_di_prova %>
+</p>
+
+<p>
+  <b>Subappalto:</b>
+  <%=h @prova.subappalto %>
+</p>
+
+<p>
+  <b>Prezzo:</b>
+  <%=h @prova.prezzo %>
+</p>
+
+<p>
+  <b>Note:</b>
+  <%=h @prova.note %>
+</p>
+
+
+<%= link_to 'Edit', edit_prova_path(@prova) %> |
+<%= link_to 'Back', prove_path %>

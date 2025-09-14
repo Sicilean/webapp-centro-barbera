@@ -1,0 +1,11 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  prova_id: 1
+  rapporto_id: 1
+  prezzo: 1.5
+
+two:
+  prova_id: 1
+  rapporto_id: 1
+  prezzo: 1.5

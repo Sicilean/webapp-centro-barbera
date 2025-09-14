@@ -1,0 +1,30 @@
+<h1>Listing tipologie</h1>
+
+<table>
+  <tr>
+    <th>Matrice</th>
+    <th>Nome</th>
+    <th>Nome esteso</th>
+    <th>Forfait</th>
+    <th>Prezzo</th>
+    <th>Note</th>
+  </tr>
+
+<% @tipologie.each do |tipologia| %>
+  <tr>
+    <td><%=h tipologia.matrice_id %></td>
+    <td><%=h tipologia.nome %></td>
+    <td><%=h tipologia.nome_esteso %></td>
+    <td><%=h tipologia.forfeit %></td>
+    <td><%=h tipologia.prezzo %></td>
+    <td><%=h tipologia.note %></td>
+    <td><%= link_to 'Show', tipologia %></td>
+    <td><%= link_to 'Edit', edit_tipologia_path(tipologia) %></td>
+    <td><%= link_to 'Destroy', tipologia, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New tipologia', new_tipologia_path %>

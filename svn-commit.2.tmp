@@ -1,0 +1,6 @@
+modello definitivo (!)
+--This line, and those below, will be ignored--
+
+M    app/views/layouts/main.erb
+M    altro/db_schema.rb
+M    config/initializers/inflections.rb

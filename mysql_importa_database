@@ -1,0 +1,3 @@
+rake db:drop
+rake db:create
+mysql -uroot -p barbera_development < barbera_development_backup.sql

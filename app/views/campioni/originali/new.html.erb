@@ -1,0 +1,67 @@
+<h1>New campione</h1>
+
+<% form_for(@campione) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :matrice_id %><br />
+    <%= f.text_field :matrice_id %>
+  </p>
+  <p>
+    <%= f.label :cliente_id %><br />
+    <%= f.text_field :cliente_id %>
+  </p>
+  <p>
+    <%= f.label :etichetta %><br />
+    <%= f.text_field :etichetta %>
+  </p>
+  <p>
+    <%= f.label :nome_richiedente %><br />
+    <%= f.text_field :nome_richiedente %>
+  </p>
+  <p>
+    <%= f.label :data_richiesta %><br />
+    <%= f.datetime_select :data_richiesta %>
+  </p>
+  <p>
+    <%= f.label :data_scadenza %><br />
+    <%= f.datetime_select :data_scadenza %>
+  </p>
+  <p>
+    <%= f.label :numero %><br />
+    <%= f.text_field :numero %>
+  </p>
+  <p>
+    <%= f.label :suggello %><br />
+    <%= f.text_field :suggello %>
+  </p>
+  <p>
+    <%= f.label :campionamento %><br />
+    <%= f.text_field :campionamento %>
+  </p>
+  <p>
+    <%= f.label :non_conforme_motivo %><br />
+    <%= f.text_field :non_conforme_motivo %>
+  </p>
+  <p>
+    <%= f.label :data_invio_email %><br />
+    <%= f.datetime_select :data_invio_email %>
+  </p>
+  <p>
+    <%= f.label :data_invio_sms %><br />
+    <%= f.datetime_select :data_invio_sms %>
+  </p>
+  <p>
+    <%= f.label :status %><br />
+    <%= f.text_field :status %>
+  </p>
+  <p>
+    <%= f.label :note %><br />
+    <%= f.text_field :note %>
+  </p>
+  <p>
+    <%= f.submit 'Create' %>
+  </p>
+<% end %>
+
+<%= link_to 'Back', campioni_path %>

@@ -1,0 +1,39 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  matrice_id: 1
+  cliente_id: 1
+  etichetta: MyString
+  nome_richiedente: MyString
+  data_richiesta: 2010-02-09 17:44:19
+  data_scadenza: 2010-02-09 17:44:19
+  rc_numero: 1
+  rc_anno: 1
+  rdp_numero: 1
+  rdp_anno: 1
+  suggello: MyString
+  campionamento: MyString
+  non_conforme_motivo: MyString
+  data_invio_email: 2010-02-09 17:44:19
+  data_invio_sms: 2010-02-09 17:44:19
+  status: MyString
+  note: MyString
+
+two:
+  matrice_id: 1
+  cliente_id: 1
+  etichetta: MyString
+  nome_richiedente: MyString
+  data_richiesta: 2010-02-09 17:44:19
+  data_scadenza: 2010-02-09 17:44:19
+  rc_numero: 1
+  rc_anno: 1
+  rdp_numero: 1
+  rdp_anno: 1
+  suggello: MyString
+  campionamento: MyString
+  non_conforme_motivo: MyString
+  data_invio_email: 2010-02-09 17:44:19
+  data_invio_sms: 2010-02-09 17:44:19
+  status: MyString
+  note: MyString

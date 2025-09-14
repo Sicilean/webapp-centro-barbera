@@ -1,0 +1,277 @@
+# This file is auto-generated from the current state of the database. Instead of editing this file, 
+# please use the migrations feature of Active Record to incrementally modify your database, and
+# then regenerate this schema definition.
+#
+# Note that this schema.rb definition is the authoritative source for your database schema. If you need
+# to create the application database on another system, you should be using db:schema:load, not running
+# all the migrations from scratch. The latter is a flawed and unsustainable approach (the more migrations
+# you'll amass, the slower it'll run and the greater likelihood for issues).
+#
+# It's strongly recommended to check this file into your version control system.
+
+ActiveRecord::Schema.define(:version => 20100831135329) do
+
+  create_table "auto_prova_rapporto_items", :force => true do |t|
+    t.integer  "prova_id"
+    t.integer  "rapporto_id"
+    t.float    "prezzo"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "campione_prova_items", :force => true do |t|
+    t.integer  "campione_id"
+    t.integer  "prova_id"
+    t.float    "prezzo",      :default => 0.0
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "campione_tipologia_items", :force => true do |t|
+    t.integer  "campione_id"
+    t.integer  "tipologia_id"
+    t.float    "prezzo",       :default => 0.0
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "numero"
+    t.date     "data"
+    t.string   "note"
+  end
+
+  create_table "campioni", :force => true do |t|
+    t.integer  "cliente_id"
+    t.string   "campione_di"
+    t.text     "etichetta"
+    t.string   "nome_richiedente"
+    t.integer  "numero"
+    t.date     "data"
+    t.string   "campionamento"
+    t.string   "non_conforme_motivo"
+    t.string   "suggello"
+    t.string   "comune"
+    t.string   "provincia"
+    t.string   "località"
+    t.string   "tipo_di_coltura"
+    t.string   "fase_coltura"
+    t.string   "ettari"
+    t.string   "superficie_di_prelievo"
+    t.string   "profondita_di_prelievo"
+    t.string   "numero_foglio_di_mappa"
+    t.string   "particelle"
+    t.text     "note"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "anno"
+  end
+
+  create_table "clienti", :force => true do |t|
+    t.string   "nome"
+    t.string   "denominazione"
+    t.string   "codice"
+    t.string   "indirizzo"
+    t.string   "cap"
+    t.string   "comune"
+    t.string   "provincia"
+    t.string   "partita_iva"
+    t.string   "codice_fiscale"
+    t.string   "tel"
+    t.string   "fax"
+    t.string   "email_per_notifiche"
+    t.string   "cellulare_per_sms"
+    t.string   "titolare_cellulare"
+    t.string   "note"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string   "cellulare_per_sms_2"
+    t.string   "titolare_cellulare_2"
+  end
+
+  create_table "fatture", :force => true do |t|
+    t.integer  "cliente_id"
+    t.integer  "numero"
+    t.integer  "anno"
+    t.date     "data_emissione"
+    t.float    "percentuale_sconto", :default => 0.0
+    t.date     "data_inizio"
+    t.date     "data_fine"
+    t.date     "data_pagamento"
+    t.float    "totale_in_pdf"
+    t.boolean  "pdf_esiste"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "matrici", :force => true do |t|
+    t.string   "nome"
+    t.string   "nome_esteso"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "parametri", :force => true do |t|
+    t.string   "codice"
+    t.string   "nome"
+    t.string   "note"
+    t.text     "valore",     :null => false
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "prova_rapporto_items", :force => true do |t|
+    t.integer  "prova_id"
+    t.integer  "rapporto_id"
+    t.float    "prezzo",                                                   :default => 0.0
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "position",    :limit => 15, :precision => 15, :scale => 0
+  end
+
+  create_table "prova_tipologia_items", :force => true do |t|
+    t.integer  "prova_id"
+    t.integer  "tipologia_id"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "position",     :limit => 15, :precision => 15, :scale => 0
+  end
+
+  create_table "prova_variabile_items", :force => true do |t|
+    t.integer  "prova_id"
+    t.integer  "variabile_id"
+    t.boolean  "da_mostrare"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "prove", :force => true do |t|
+    t.integer  "matrice_id"
+    t.string   "nome"
+    t.string   "nome_esteso"
+    t.string   "metodo_di_prova"
+    t.boolean  "subappalto"
+    t.float    "prezzo",          :default => 0.0
+    t.string   "note"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "rapporti", :force => true do |t|
+    t.integer  "tipologia_id"
+    t.integer  "campione_id"
+    t.integer  "numero"
+    t.integer  "numero_supplemento"
+    t.string   "status"
+    t.date     "data_richiesta"
+    t.datetime "data_scadenza"
+    t.datetime "data_invio_email"
+    t.datetime "data_invio_sms"
+    t.date     "data_esecuzione_prove_inizio"
+    t.date     "data_esecuzione_prove_fine"
+    t.date     "data_stampa"
+    t.text     "note"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.integer  "anno"
+    t.text     "pie_pagina",                   :null => false
+    t.integer  "fattura_id"
+    t.float    "prezzo_tipologia_forfeit"
+  end
+
+  create_table "risultati", :force => true do |t|
+    t.integer  "variabile_id"
+    t.integer  "campione_id"
+    t.integer  "data"
+    t.decimal  "valore_numero",        :precision => 25, :scale => 11
+    t.string   "valore_testo"
+    t.string   "incertezza_di_misura"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "sessions", :force => true do |t|
+    t.string   "session_id", :null => false
+    t.text     "data"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "sessions", ["session_id"], :name => "index_sessions_on_session_id"
+  add_index "sessions", ["updated_at"], :name => "index_sessions_on_updated_at"
+
+  create_table "tipologie", :force => true do |t|
+    t.integer  "matrice_id"
+    t.string   "nome"
+    t.string   "nome_esteso"
+    t.boolean  "forfeit"
+    t.float    "prezzo",      :default => 0.0
+    t.string   "note"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.boolean  "sinal"
+    t.text     "pie_pagina",                   :null => false
+  end
+
+  create_table "udm_items", :force => true do |t|
+    t.string   "nome"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "user_sessions", :force => true do |t|
+    t.string   "email"
+    t.string   "password"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "users", :force => true do |t|
+    t.integer  "cliente_id"
+    t.string   "nome"
+    t.integer  "role"
+    t.string   "email",               :default => "", :null => false
+    t.string   "crypted_password",    :default => "", :null => false
+    t.string   "password_salt",       :default => "", :null => false
+    t.string   "persistence_token",   :default => "", :null => false
+    t.string   "single_access_token", :default => "", :null => false
+    t.string   "perishable_token",    :default => "", :null => false
+    t.integer  "login_count",         :default => 0,  :null => false
+    t.integer  "failed_login_count",  :default => 0,  :null => false
+    t.datetime "last_request_at"
+    t.datetime "current_login_at"
+    t.datetime "last_login_at"
+    t.string   "current_login_ip"
+    t.string   "last_login_ip"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "variabile_rapporto_items", :force => true do |t|
+    t.integer  "variabile_id"
+    t.integer  "rapporto_id"
+    t.date     "data"
+    t.decimal  "valore_numero",         :precision => 25, :scale => 11
+    t.string   "valore_testo"
+    t.string   "incertezza_di_misura"
+    t.string   "errore"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.decimal  "valore_numero_forzato", :precision => 25, :scale => 11
+  end
+
+  create_table "variabili", :force => true do |t|
+    t.integer  "matrice_id"
+    t.integer  "udm_item_id"
+    t.string   "nome"
+    t.string   "nome_esteso"
+    t.string   "simbolo"
+    t.string   "funzione"
+    t.string   "tipo"
+    t.float    "min"
+    t.float    "max"
+    t.integer  "decimali"
+    t.boolean  "forza_zero"
+    t.string   "note"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+end

@@ -1,0 +1,35 @@
+<h1>New variabile_rapporto_item</h1>
+
+<% form_for(@variabile_rapporto_item) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :variabile_id %><br />
+    <%= f.text_field :variabile_id %>
+  </p>
+  <p>
+    <%= f.label :rapporto_id %><br />
+    <%= f.text_field :rapporto_id %>
+  </p>
+  <p>
+    <%= f.label :data %><br />
+    <%= f.date_select :data %>
+  </p>
+  <p>
+    <%= f.label :valore_numero %><br />
+    <%= f.text_field :valore_numero %>
+  </p>
+  <p>
+    <%= f.label :valore_testo %><br />
+    <%= f.text_field :valore_testo %>
+  </p>
+  <p>
+    <%= f.label :incertezza_di_misura %><br />
+    <%= f.text_field :incertezza_di_misura %>
+  </p>
+  <p>
+    <%= f.submit 'Create' %>
+  </p>
+<% end %>
+
+<%= link_to 'Back', variabile_rapporto_items_path %>

@@ -1,0 +1,75 @@
+<h1>New cliente</h1>
+
+<% form_for(@cliente) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :nome %><br />
+    <%= f.text_field :nome %>
+  </p>
+  <p>
+    <%= f.label :denominazione %><br />
+    <%= f.text_field :denominazione %>
+  </p>
+  <p>
+    <%= f.label :codice %><br />
+    <%= f.text_field :codice %>
+  </p>
+  <p>
+    <%= f.label :indirizzo %><br />
+    <%= f.text_field :indirizzo %>
+  </p>
+  <p>
+    <%= f.label :cap %><br />
+    <%= f.text_field :cap %>
+  </p>
+  <p>
+    <%= f.label :comune %><br />
+    <%= f.text_field :comune %>
+  </p>
+  <p>
+    <%= f.label :provincia %><br />
+    <%= f.text_field :provincia %>
+  </p>
+  <p>
+    <%= f.label :partita_iva %><br />
+    <%= f.text_field :partita_iva %>
+  </p>
+  <p>
+    <%= f.label :codice_fiscale %><br />
+    <%= f.text_field :codice_fiscale %>
+  </p>
+  <p>
+    <%= f.label :tel %><br />
+    <%= f.text_field :tel %>
+  </p>
+  <p>
+    <%= f.label :fax %><br />
+    <%= f.text_field :fax %>
+  </p>
+  <p>
+    <%= f.label :email %><br />
+    <%= f.text_field :email %>
+  </p>
+  <p>
+    <%= f.label :cellulare_per_sms %><br />
+    <%= f.text_field :cellulare_per_sms %>
+  </p>
+  <p>
+    <%= f.label :titolare_cellulare %><br />
+    <%= f.text_field :titolare_cellulare %>
+  </p>
+  <p>
+    <%= f.label :password %><br />
+    <%= f.text_field :password %>
+  </p>
+  <p>
+    <%= f.label :note %><br />
+    <%= f.text_field :note %>
+  </p>
+  <p>
+    <%= f.submit 'Create' %>
+  </p>
+<% end %>
+
+<%= link_to 'Back', clienti_path %>

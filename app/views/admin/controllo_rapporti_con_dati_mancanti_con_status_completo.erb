@@ -1,0 +1,48 @@
+<br/>
+<h1>Estrazione di controllo di tutti i rapporti con dati mancanti e status 'completo' </h1>
+<br/>
+<% if  @rapporti_non_pronti.empty? %>
+  nessun risultato
+<% else %>
+  <table border ="1" cellpadding="3" cellspacing="0">
+    <tr>
+      <th><%= link_to "N. rapporti", :controller => :rapporti, :action => :da_completare %>: <%= @rapporti_non_pronti.size %>
+      </th>
+      <th>Rc</th>
+      <th>Rdp</th>
+      <th>Dati Mancanti</th>
+
+      <th>&nbsp;</th>
+      <th>Status</th>
+
+    </tr>
+    <% @rapporti_non_pronti.each do |@rapporto| %>
+    <tr>
+      <td>
+         <%= link_to @rapporto.campione.cliente.nome, @rapporto.campione.cliente %> - <%=h @rapporto.tipologia.nome unless @rapporto.tipologia.nil? %>
+      </td>
+
+      <td align="center">
+        <%= link_to (@rapporto.campione.numero || "manca"),  :controller => 'campioni', :action => :edit, :id => @rapporto.campione %>
+      </td>
+      <td align="center">
+        <%= link_to (@rapporto.numero || "manca"), :controller => 'rapporti', :action => :edit, :id => @rapporto %>
+      </td>
+      <td align="center">
+          <% if @rapporto.variabile_rapporto_items_mancanti.size == 0 %>
+            completo
+          <% else %>
+            <%= link_to @rapporto.variabile_rapporto_items_mancanti.size, :controller => :admin, :action => :dati_rapporto, :id => @rapporto.id %>
+          <% end %>
+      </td>
+     
+      <td><%= link_to 'Dati Rapporto', :controller => :admin, :action => :dati_rapporto, :id => @rapporto.id %></td>
+      <td>
+         <%= @rapporto.status %> 
+      </td>
+    </tr>
+    <% end %>
+  </table>
+<% end %>
+
+

@@ -1,0 +1,22 @@
+<h1>Listing matrici</h1>
+
+<table>
+  <tr>
+    <th>Nome</th>
+    <th>Nome esteso</th>
+  </tr>
+
+<% @matrici.each do |matrice| %>
+  <tr>
+    <td><%=h matrice.nome %></td>
+    <td><%=h matrice.nome_esteso %></td>
+    <td><%= link_to 'Show', matrice %></td>
+    <td><%= link_to 'Edit', edit_matrice_path(matrice) %></td>
+    <td><%= link_to 'Destroy', matrice, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New matrice', new_matrice_path %>

@@ -1,0 +1,46 @@
+<h1>Listing campioni</h1>
+
+<table>
+  <tr>
+    <th>Matrice</th>
+    <th>Cliente</th>
+    <th>Etichetta</th>
+    <th>Nome richiedente</th>
+    <th>Data richiesta</th>
+    <th>Data scadenza</th>
+    <th>Numero</th>
+    <th>Suggello</th>
+    <th>Campionamento</th>
+    <th>Non conforme motivo</th>
+    <th>Data invio email</th>
+    <th>Data invio sms</th>
+    <th>Status</th>
+    <th>Note</th>
+  </tr>
+
+<% @campioni.each do |campione| %>
+  <tr>
+    <td><%=h campione.matrice_id %></td>
+    <td><%=h campione.cliente_id %></td>
+    <td><%=h campione.etichetta %></td>
+    <td><%=h campione.nome_richiedente %></td>
+    <td><%=h campione.data_richiesta %></td>
+    <td><%=h campione.data_scadenza %></td>
+    <td><%=h campione.numero %></td>
+    <td><%=h campione.suggello %></td>
+    <td><%=h campione.campionamento %></td>
+    <td><%=h campione.non_conforme_motivo %></td>
+    <td><%=h campione.data_invio_email %></td>
+    <td><%=h campione.data_invio_sms %></td>
+    <td><%=h campione.status %></td>
+    <td><%=h campione.note %></td>
+    <td><%= link_to 'Show', campione %></td>
+    <td><%= link_to 'Edit', edit_campione_path(campione) %></td>
+    <td><%= link_to 'Destroy', campione, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New campione', new_campione_path %>

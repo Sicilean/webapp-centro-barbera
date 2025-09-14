@@ -1,0 +1,17 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  matrice_id: 1
+  nome: MyString
+  nome_esteso: MyString
+  forfeit: false
+  prezzo: 1.5
+  note: MyString
+
+two:
+  matrice_id: 1
+  nome: MyString
+  nome_esteso: MyString
+  forfeit: false
+  prezzo: 1.5
+  note: MyString

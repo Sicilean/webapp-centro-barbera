@@ -1,0 +1,33 @@
+<p>
+  <b>Tipologia:</b>
+  <%=h @rapporto.tipologia_id %>
+</p>
+
+<p>
+  <b>Campione:</b>
+  <%=h @rapporto.campione_id %>
+</p>
+
+<p>
+  <b>Numero:</b>
+  <%=h @rapporto.numero %>
+</p>
+
+<p>
+  <b>Prezzo:</b>
+  <%=h @rapporto.prezzo %>
+</p>
+
+<p>
+  <b>Data:</b>
+  <%=h @rapporto.data %>
+</p>
+
+<p>
+  <b>Note:</b>
+  <%=h @rapporto.note %>
+</p>
+
+
+<%= link_to 'Edit', edit_rapporto_path(@rapporto) %> |
+<%= link_to 'Back', rapporti_path %>

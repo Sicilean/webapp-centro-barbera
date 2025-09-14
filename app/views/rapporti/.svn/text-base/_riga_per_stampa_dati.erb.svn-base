@@ -1,0 +1,26 @@
+<% @variabile_rapporto_item.variabile.variabili_indipendenti.each do |variabile| %>
+  <% @variabile_rapporto_items.each {|variabile_rapporto_item|  @variabile_rapporto_item = variabile_rapporto_item if variabile_rapporto_item.variabile == variabile } %>
+  <tr style="height: 0.8cm;">
+    <td>
+        <%= @variabile_rapporto_item.variabile.nome_esteso %>
+    </td>
+    <td>
+      <div id="nota_light" >
+        <div style =" font-size: smaller;">
+              <%=  "&nbsp;"*3*counter %><%= @variabile_rapporto_item.variabile.simbolo %>
+              <%= " = #{@variabile_rapporto_item.variabile.funzione}"  if @variabile_rapporto_item.variabile.tipo == 'funzione'%>
+        </div>
+      </div>
+    </td>
+
+    <td>
+      <%= @variabile_rapporto_item.udm %>
+    </td>
+    <td>
+        <strong>
+          <%= @variabile_rapporto_item.valore_automatico %>
+        </strong>
+    </td>
+  </tr>
+  <%= render :partial => 'riga_per_stampa_dati', :locals => { :variabile_rapporto_item => @variabile_rapporto_item, :counter => counter+1 }  %>
+<% end %>

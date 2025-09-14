@@ -1,0 +1,18 @@
+<p>
+  <b>Prova:</b>
+  <%=h @prova_variabile_item.prova_id %>
+</p>
+
+<p>
+  <b>Variabile:</b>
+  <%=h @prova_variabile_item.variabile_id %>
+</p>
+
+<p>
+  <b>Da mostrare:</b>
+  <%=h @prova_variabile_item.da_mostrare %>
+</p>
+
+
+<%= link_to 'Edit', edit_prova_variabile_item_path(@prova_variabile_item) %> |
+<%= link_to 'Back', prova_variabile_items_path %>

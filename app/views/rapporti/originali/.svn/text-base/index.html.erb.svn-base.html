@@ -1,0 +1,30 @@
+<h1>Listing rapporti</h1>
+
+<table>
+  <tr>
+    <th>Tipologia</th>
+    <th>Campione</th>
+    <th>Numero</th>
+    <th>Prezzo</th>
+    <th>Data</th>
+    <th>Note</th>
+  </tr>
+
+<% @rapporti.each do |rapporto| %>
+  <tr>
+    <td><%=h rapporto.tipologia_id %></td>
+    <td><%=h rapporto.campione_id %></td>
+    <td><%=h rapporto.numero %></td>
+    <td><%=h rapporto.prezzo %></td>
+    <td><%=h rapporto.data %></td>
+    <td><%=h rapporto.note %></td>
+    <td><%= link_to 'Show', rapporto %></td>
+    <td><%= link_to 'Edit', edit_rapporto_path(rapporto) %></td>
+    <td><%= link_to 'Destroy', rapporto, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New rapporto', new_rapporto_path %>

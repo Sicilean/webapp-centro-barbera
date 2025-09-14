@@ -1,0 +1,120 @@
+FROM debian:jessie
+
+# Configura i repository Debian Jessie
+RUN echo "deb http://archive.debian.org/debian/ jessie main" > /etc/apt/sources.list && \
+    echo "deb http://archive.debian.org/debian-security jessie/updates main" >> /etc/apt/sources.list && \
+    echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/10no-check-valid-until
+
+# Installa le dipendenze di sistema
+RUN apt-get update && apt-get install -y --force-yes \
+    build-essential \
+    libmysqlclient-dev \
+    mysql-client \
+    libreadline-dev \
+    libssl-dev \
+    zlib1g-dev \
+    curl \
+    wget \
+    git \
+    fontconfig \
+    libxrender1 \
+    xfonts-base \
+    xfonts-75dpi \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installa PrinceXML da un mirror alternativo
+RUN cd /tmp && \
+    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
+    wget --no-check-certificate https://web.archive.org/web/20160318164738/http://www.princexml.com/download/prince_9.0-5_debian8.0_amd64.deb && \
+    dpkg -i prince_9.0-5_debian8.0_amd64.deb || true && \
+    apt-get update && apt-get install -f -y --force-yes && \
+    rm -f prince_9.0-5_debian8.0_amd64.deb
+
+# Scarica e installa Ruby 1.8.7
+RUN cd /tmp && \
+    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
+    wget --no-check-certificate https://cache.ruby-lang.org/pub/ruby/1.8/ruby-1.8.7-p374.tar.gz && \
+    tar xzf ruby-1.8.7-p374.tar.gz && \
+    cd ruby-1.8.7-p374 && \
+    ./configure --disable-install-doc && \
+    make && \
+    make install && \
+    cd .. && \
+    rm -rf ruby-1.8.7-p374*
+
+# Scarica e installa una versione specifica di RubyGems
+RUN cd /tmp && \
+    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
+    wget --no-check-certificate https://github.com/rubygems/rubygems/archive/v1.3.7.tar.gz -O rubygems-1.3.7.tgz && \
+    tar xzf rubygems-1.3.7.tgz && \
+    cd rubygems-1.3.7 && \
+    ruby setup.rb && \
+    cd .. && \
+    rm -rf rubygems-1.3.7*
+
+# Configura RubyGems
+RUN mkdir -p ~/.gem && \
+    echo ':ssl_verify_mode: 0' > ~/.gemrc && \
+    echo ':sources: ["http://rubygems.org"]' >> ~/.gemrc && \
+    echo ':update_sources: false' >> ~/.gemrc && \
+    echo ':backtrace: false' >> ~/.gemrc && \
+    echo ':benchmark: false' >> ~/.gemrc
+
+# Crea directory per le gemme pre-scaricate
+WORKDIR /gems
+RUN mkdir -p /gems && \
+    cd /gems && \
+    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
+    wget --no-check-certificate https://rubygems.org/downloads/rake-0.8.7.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/rack-1.1.0.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/activesupport-2.3.8.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/activerecord-2.3.8.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/actionpack-2.3.8.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/actionmailer-2.3.8.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/activeresource-2.3.8.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/rails-2.3.8.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/mysql-2.8.1.gem && \
+    wget --no-check-certificate https://rubygems.org/downloads/authlogic-2.1.6.gem
+
+# Installa le gemme localmente nell'ordine corretto delle dipendenze
+RUN cd /gems && \
+    gem install --local rake-0.8.7.gem --no-ri --no-rdoc && \
+    gem install --local rack-1.1.0.gem --no-ri --no-rdoc && \
+    gem install --local activesupport-2.3.8.gem --no-ri --no-rdoc && \
+    gem install --local activerecord-2.3.8.gem --no-ri --no-rdoc && \
+    gem install --local actionpack-2.3.8.gem --no-ri --no-rdoc && \
+    gem install --local actionmailer-2.3.8.gem --no-ri --no-rdoc && \
+    gem install --local activeresource-2.3.8.gem --no-ri --no-rdoc && \
+    gem install --local rails-2.3.8.gem --no-ri --no-rdoc && \
+    gem install --local mysql-2.8.1.gem --no-ri --no-rdoc && \
+    gem install --local authlogic-2.1.6.gem --no-ri --no-rdoc && \
+    gem install bundler -v 1.0.22 --no-ri --no-rdoc
+
+# Imposta la directory di lavoro per l'applicazione
+WORKDIR /app
+
+# Copia l'applicazione
+COPY . .
+
+# Crea un Gemfile minimo
+RUN echo 'source "file:///gems"' > Gemfile && \
+    echo 'gem "rake", "0.8.7"' >> Gemfile && \
+    echo 'gem "rack", "1.1.0"' >> Gemfile && \
+    echo 'gem "rails", "2.3.8"' >> Gemfile && \
+    echo 'gem "mysql", "2.8.1"' >> Gemfile && \
+    echo 'gem "authlogic", "2.1.6"' >> Gemfile
+
+# Configura Bundler
+ENV BUNDLE_PATH=/gems \
+    BUNDLE_BIN=/gems/bin \
+    BUNDLE_DEPLOYMENT=true \
+    BUNDLE_LOCAL=true
+
+# Script per importare il database
+COPY barbera_development_may_30_2010.sql /docker-entrypoint-initdb.d/
+
+# Espone la porta 3000
+EXPOSE 3000
+
+# Comando per avviare l'applicazione
+CMD ["script/server", "-b", "0.0.0.0"] 

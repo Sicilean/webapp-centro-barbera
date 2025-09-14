@@ -1,0 +1,19 @@
+<h2>Anteprima messaggio</h2>
+
+<br/>
+
+<%  form_tag  "/rapporti/invia_sms" do %>
+  <strong>Da:</strong> <%= @mittente_default %><br/>
+  <strong>A:</strong>  <%= text_field_tag :destinatario_corretto, (h @destinatario_default), {:maxlength => 25, :size => 25} %>
+  (<%= link_to @cliente.nome, :controller=> :clienti, :action => 'edit', :id=> @cliente %>)<br/>
+  <strong>Testo:</strong>
+  <%= text_field_tag :testo_corretto, (h @testo_default), {:maxlength => 160, :size => 160} %>
+
+  <% @rapporti.each do |rapporto| %>
+    <%= check_box_tag 'sms_array[]', rapporto.id, true, {:style => "display:none;"} %>
+  <% end %>
+
+  <br/>
+  <br/>
+<%= submit_tag 'Invia' %>
+<% end %>

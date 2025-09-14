@@ -1,0 +1,7 @@
+<p>Elenco dei rapporti per i quali mancano delle variabili (status = 'in lavorazione')</p>
+
+<%=  render :active_scaffold => 'rapporti',
+            :label => 'Rapporti da completare',
+            :sort => "data_scadenza",
+            :sort_direction => "ASC",
+            :constraints => { :status => "in lavorazione" } %>

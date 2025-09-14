@@ -1,0 +1,36 @@
+<h1>Editing tipologia</h1>
+
+<% form_for(@tipologia) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :matrice_id %><br />
+    <%= f.text_field :matrice_id %>
+  </p>
+  <p>
+    <%= f.label :nome %><br />
+    <%= f.text_field :nome %>
+  </p>
+  <p>
+    <%= f.label :nome_esteso %><br />
+    <%= f.text_field :nome_esteso %>
+  </p>
+  <p>
+    <%= f.label :forfeit %><br />
+    <%= f.check_box :forfeit %>
+  </p>
+  <p>
+    <%= f.label :prezzo %><br />
+    <%= f.text_field :prezzo %>
+  </p>
+  <p>
+    <%= f.label :note %><br />
+    <%= f.text_field :note %>
+  </p>
+  <p>
+    <%= f.submit 'Update' %>
+  </p>
+<% end %>
+
+<%= link_to 'Show', @tipologia %> |
+<%= link_to 'Back', tipologie_path %>

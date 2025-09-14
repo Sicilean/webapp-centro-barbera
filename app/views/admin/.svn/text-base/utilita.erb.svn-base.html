@@ -1,0 +1,26 @@
+<h1>Utilità</h1>
+<br  />
+
+<h3>Aggiornamento prezzi </h3>
+<br  />
+Quanto viene creato un rapporto con esso viene memorizzato anche relativo prezzo che viene copiato dal listino in vigore in quel momento.<br />
+Se successivamente il listino viene modificato, tale modifica ha effetto sui rapporti che verranno creati da quel momento in poi. <br />
+Qui tuttavia è possibile aggiornare automaticamente i prezzi dei vecchi rapporti per allinearli al listino attuale. <br />
+<br />
+<i>Nb. I rapporti fatturati <b>non</b> vengono modificati. </i><br />
+<br />
+
+<b>Selezionare i rapporti per i quali si vogliono aggiornare i prezzi</b><br />
+<br  />
+<% form_tag :action => :attualizza_prezzi do %>
+  Rapporti dall'Rdp n.<%= text_field_tag :numero_iniziale, '', :maxlength => 4, :size => 4 %> al n.<%= text_field_tag :numero_finale, '', :maxlength => 4, :size => 4 %> (estremi inclusi) dell'anno   <%= select_tag :anno, options_for_select([['','']]+((2009..(DateTime.now.year)).map{|x| [x.to_s,x]})) %>
+  <br/>
+  <%= submit_tag 'Aggiorna', :confirm => "Confermi? \nAttenzione: una volta confermato non sarà più possibile annullare l'operazione!"%>
+<% end %>
+<br/>
+<br/>
+
+<h3>Rapporti: Controllo coerenza campo 'status' con 'dati mancanti'</h3>
+<br  />
+<%= link_to 'Qui', :action => 'controllo_rapporti_con_dati_mancanti_con_status_completo' %> si possono visualizzare eventuali rapporti di prova che risultano erroneamente con status 'completo' pur in presenza di dati mancanti.
+

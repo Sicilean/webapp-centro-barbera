@@ -1,0 +1,83 @@
+<br/>
+<h1>Situazione al <%= Time.now.day %>/<%= Time.now.month %>/<%= Time.now.year %></h1>
+<br/>
+
+<% if @anno != DateTime.now.year %>
+  Anno: <%= @anno %><br/><br/>
+<% end %>
+[<%= link_to "Stampa Quaderni di laboratorio", :controller => 'rapporti', :action => 'stampa_dati_di_tutti_i_rapporti' %>]
+
+<%  (2010..DateTime.now.year).each do |anno|%>
+  <% if @anno != anno %>
+  [<%= link_to "Vedi #{anno}", :controller => :admin, :anno => anno, :mostra_clienti_test => @mostra_clienti_test %>]
+  <% end %>
+<% end %>
+<% if @mostra_clienti_test %>
+  [<%= link_to "Rapporto non di test", :controller => :admin, :anno => @anno, :mostra_clienti_test => false %>]
+<% else %>
+  [<%= link_to "Rapporti test", :controller => :admin, :anno => @anno, :mostra_clienti_test => true %>]
+<% end %>
+<br/>
+<br/>
+
+<% if  @rapporti_non_pronti.empty? %>
+  Non c'è nulla in sospeso
+<% else %>
+  <table border ="1" cellpadding="3" cellspacing="0">
+    <tr>
+      <th>
+      <% if @mostra_clienti_test %>
+        Rapporti test<br/>
+        <small>(con ' test ' nel nome cliente)</small>
+      <% else %>
+        Rapporti non pronti
+      <% end %>
+      </th>
+      <th>Rc</th>
+      <th>Rdp</th>
+      <th>Dati Mancanti</th>
+      <th>Data scadenza</th>
+      <th>&nbsp;</th>
+    </tr>
+    <% @rapporti_non_pronti.each do |@rapporto| %>
+    <!-- escludo tutti i rapporti dei clienti test -->
+      <% if (!@mostra_clienti_test && !@rapporto.cliente.cliente_test?) || (@mostra_clienti_test && @rapporto.cliente.cliente_test?)  %>
+        <tr>
+          <td>
+             <%= link_to @rapporto.campione.cliente.nome, @rapporto.campione.cliente %> - <%=h @rapporto.tipologia.nome unless @rapporto.tipologia.nil? %>
+          </td>
+
+          <td align="center">
+            <%= link_to (@rapporto.campione.numero || "manca"),  :controller => 'campioni', :action => :edit, :id => @rapporto.campione %>
+          </td>
+          <td align="center">
+            <%= link_to (@rapporto.numero || "manca"), :controller => 'rapporti', :action => :edit, :id => @rapporto %>
+          </td>
+          <td align="center">
+              <% if @rapporto.variabile_rapporto_items_mancanti.size == 0 %>
+                completo
+              <% else %>
+                <%= link_to @rapporto.variabile_rapporto_items_mancanti.size, :controller => :admin, :action => :dati_rapporto, :id => @rapporto.id %>
+              <% end %>
+          </td>
+          <td>
+            <% unless @rapporto.data_scadenza.nil? %>
+              <div <%= "style= 'color:red;font-weight:bold;'" if @rapporto.data_scadenza < Time.now %>>
+                <%=h @rapporto.data_scadenza.day %>/<%=h @rapporto.data_scadenza.month %>/<%=h @rapporto.data_scadenza.year %><br />
+                <% if @rapporto.data_scadenza > Time.now  %>
+                  Scade tra
+                <% else %>
+                  Scaduto da
+                <% end %>
+                <%= distance_of_time_in_words(Time.now - @rapporto.data_scadenza) %>
+              </div>
+            <% end %>
+          </td>
+          <td><%= link_to 'Dati Rapporto', :controller => :admin, :action => :dati_rapporto, :id => @rapporto.id %></td>
+        </tr>
+      <% end %>
+    <% end %>
+  </table>
+<% end %>
+
+

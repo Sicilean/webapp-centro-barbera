@@ -1,0 +1,120 @@
+<br/>
+
+<%  if @rapporto.fatturato? %>
+  <h4>
+    <div style='color:red;' >
+      RAPPORTO FATTURATO (non modificabile)
+    </div>
+  </h4>
+<br/>
+<% end %>
+
+Rapporto su Campione:  <%= link_to @rapporto.campione.to_label,  @rapporto.campione %><br/>
+Status: <%= @rapporto.status -%>
+<br/>
+<% if @rapporto.prove_totali.size == 0 %>
+  Rapporto senza prove
+<% elsif @rapporto.variabili_tutte_inserite? %>
+  <b>Rapporto completato (tutti i dati sono stati inseriti)</b><br/>
+<% else %>
+  Dati mancanti: <%= @rapporto.variabile_rapporto_items_mancanti.size %><br/>
+<% end %>
+<br/>
+<%= render :partial => 'box_riassuntivo_conteggio_rapporto', :locals => { :rapporto =>  @rapporto } %>
+<br/>
+<br/>
+<%= render :partial => 'menu_dati_rapporto' %>
+<br />
+<br />
+
+<div class="active-scaffold blue-theme">
+  <div class="active-scaffold-header">
+  <h2>Input Dati Rapporto: <%= @rapporto.to_label %></h2>
+  </div>
+  <table border ="1" cellpadding="7" cellspacing="0">
+      <tr>
+        <th>Nome Variabile</th>
+        <th>Valore</th>
+        <th>Incertezza di misura</th>
+        <th>
+          Data ultimo agg. <br />
+          <small>(si aggiorna automaticamente)</small>
+        </th>
+      </tr>
+      <% even_odd = 0 %>
+      <% @variabile_rapporto_items.each do |@variabile_rapporto_item| %>
+        <%
+        even_odd = 1 - even_odd
+        if even_odd == 0
+           record_class = "record even-record"
+        else
+           record_class = "record"
+        end
+        %>
+          <tr class="<%= record_class %>">          <td>
+            <div <%= "style= 'color:red;font-weight:bold;'" unless @variabile_rapporto_item.ok? %>>
+              <%= link_to @variabile_rapporto_item.variabile.nome,  @variabile_rapporto_item.variabile %>
+            </div>
+            <div id="nota_light" >
+            <%= @variabile_rapporto_item.variabile.simbolo %>
+            <%= " = #{@variabile_rapporto_item.variabile.funzione}"  if @variabile_rapporto_item.variabile.tipo == 'funzione'%>
+            </div>
+          </td>
+          <td>
+            <% if @variabile_rapporto_item.variabile.tipo == 'funzione' %>
+              <% if params[:modifica] == 'funzione' %>
+                Valore reale:<br/>
+                <strong>
+                  <%=h number_with_precision(@variabile_rapporto_item.valore_numero, :precision => @variabile_rapporto_item.variabile.decimali) %>
+                </strong> <%= @variabile_rapporto_item.udm %>
+                <% form_for @variabile_rapporto_item, :url => {:controller => :custom_variabile_rapporto_items, :action => :update, :id => @variabile_rapporto_item.id} do |f| %>
+                  <%= f.error_messages %>
+                <input name="_method" type="hidden" value="put" />
+                <p>
+                  <%= f.label 'Valore forzato:' %><br />
+                  <%= f.text_field :valore_numero_forzato,
+                    :maxlength => 20,
+                    :size => 8,
+                    :value => number_with_precision(@variabile_rapporto_item.valore_numero_forzato, :precision => @variabile_rapporto_item.variabile.decimali) %>              <%= f.submit 'Forza' %>
+                  </p>
+                <% end %>
+              <% else %>
+                <strong>
+                  <%=h number_with_precision(@variabile_rapporto_item.valore_numero, :precision => @variabile_rapporto_item.variabile.decimali) %> <%= @variabile_rapporto_item.udm %>
+                </strong>
+                <% unless @variabile_rapporto_item.valore_numero_forzato.nil? %>
+                  <br/>
+                  <div "style= 'color:red;font-weight:bold;'>
+                    Forzato a: <strong><%=h number_with_precision(@variabile_rapporto_item.valore_numero_forzato, :precision => @variabile_rapporto_item.variabile.decimali) %> <%= @variabile_rapporto_item.udm %></strong>
+                  </div>
+                <% end %>
+              <% end %>
+              <!-- Errori nella funzione -->
+              <div style='color:red;' >
+                <%= "Errore nel calcolo: #{@variabile_rapporto_item.errore}<br/>" unless @variabile_rapporto_item.errore.blank? %>
+                <% unless (@variabile_rapporto_item.variabile.min.blank? || @variabile_rapporto_item.valore_numero.nil?) %>
+                  <%= "Nota: Valore inferiore al minimo: #{number_with_precision(@variabile_rapporto_item.variabile.min, :precision => @variabile_rapporto_item.variabile.decimali) } #{@variabile_rapporto_item.udm}" if  @variabile_rapporto_item.valore_numero < @variabile_rapporto_item.variabile.min %>
+                <% end %>
+                <% unless (@variabile_rapporto_item.variabile.max.blank? || @variabile_rapporto_item.valore_numero.nil?) %>
+                  <%= "Nota: Valore superiore al massimo: #{number_with_precision(@variabile_rapporto_item.variabile.max, :precision => @variabile_rapporto_item.variabile.decimali) } #{@variabile_rapporto_item.udm}" if  @variabile_rapporto_item.valore_numero > @variabile_rapporto_item.variabile.max %>
+                <% end %>
+              </div>
+            <% else %>
+              <div id="update_div_variabile_rapporto_<%= @variabile_rapporto_item.id-%>" >
+                <%= render :partial => 'dati_rapporto_variabile_ajax_form', :locals => { :variabile_rapporto_item =>  @variabile_rapporto_item } %>
+              </div>
+            <% end %>
+
+          </td>
+          <td>
+              <div id="update_div_incertezza_di_misura_rapporto_<%= @variabile_rapporto_item.id-%>" >
+                <%= render :partial => 'dati_rapporto_incertezza_di_misura_ajax_form', :locals => { :variabile_rapporto_item =>  @variabile_rapporto_item } %>
+              </div>
+          </td>
+          <td><%=h "#{@variabile_rapporto_item.data.day}-#{@variabile_rapporto_item.data.month}-#{@variabile_rapporto_item.data.year}" unless @variabile_rapporto_item.data.nil? %></td>
+
+        </tr>
+      <% end %>
+  </table>
+</div>
+<br />

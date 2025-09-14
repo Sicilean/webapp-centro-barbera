@@ -1,0 +1,2 @@
+module AutoProvaRapportoItemsHelper
+end

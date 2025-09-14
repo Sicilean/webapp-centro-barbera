@@ -1,0 +1,152 @@
+<h1>Listino</h1>
+<br  />
+
+Nota bene:
+<ul type="square">
+  <li>le modifiche ai prezzi di listino <b>non modificano</b> i prezzi dei rapporti esistenti (fatturati o no), ovvero</li>
+  <li>le modifiche ai prezzi hanno effetto sui rapporti creati dopo la loro modifica (per modificare i prezzi di rapporti esistenti vai nelle <%= link_to 'Utilità', :action => :utilita %>)</li>
+  <li>I Totali sono <b>simulazioni</b>, ovvero sono calcolati ai prezzi di listino e non tengono conto dell'effettivo imponibile di un rapporto</li>
+  <li>Anche se i prezzi non vengono modificati i totali sono <b>simulazioni</b> in quanto non tengono conto di sconti o prezzi diversi per cliente</li>
+</ul>
+
+<br/>
+
+
+<big>
+  |
+  <% for anno in 2009..(Time.now.year) %>
+    <% if anno == @anno %>
+      Anno <b><%= anno %></b>
+    <% else %>
+      <%= link_to "Vedi anno #{anno}", url_for(:controller => :admin, :action => :listino, :anno => anno) %>
+    <% end %>
+    |
+  <% end %>
+</big>
+
+<br/>
+<br/>
+<table border="1" cellspacing="0" cellpadding="3" style="text-align: right">
+  <thead>
+    <tr>
+      <th>Tipologie a forfeit</th>
+      <th style="font-size: 9px;">Quantità fatturati</th>
+      <th style="font-size: 9px;">Quantità fatturati x <br/>Prezzo di listino</th>
+      <th style="font-size: 9px;">Quantità non fatturati</th>
+      <th style="font-size: 9px;">Quantità non fatturati x <br/>Prezzo di listino</th>
+      <th>
+        Quantità tot. <br/>
+        <span style="font-size: 9px;" >fatturati + non fatturati</span>
+      </th>
+      <th>Quantità tot. x <br/>Prezzo di listino</th>
+      <th style="text-align: center">Prezzo di listino</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%  sommatoria = 0 %>
+    <% @tipologie_a_forfeit.sort_by{|tipologia| tipologia.nome}.each do |tipologia| %>
+      <% quantita_fatturate = @numero_tipologie[tipologia.id][0]%>
+      <% quantita_da_fatturare = @numero_tipologie[tipologia.id][1]%>
+      <% quantita = quantita_fatturate + quantita_da_fatturare  %>
+      <% prezzo =  tipologia.prezzo %>
+      <% totale_fatturate =  quantita_fatturate * prezzo %>
+      <% totale_da_fatturare  =  quantita_da_fatturare * prezzo %>
+      <% totale =  quantita * prezzo %>
+      <% sommatoria += totale %>
+      <tr>
+        <td><%= link_to tipologia.nome, tipologia %> (<%= link_to "#{tipologia.prove.size} prove", url_for(:controller => :tipologie, :id => tipologia.id, :action => :nested, :method => :get, :associations => :prove) %>)<br/>
+          <small><%= tipologia.nome_esteso %></small>
+        </td>
+
+        <td><%= quantita_fatturate %></b></td>
+        <td><%= formatta_prezzo totale_fatturate %></td>
+
+        <td><%= quantita_da_fatturare %></b></td>
+        <td><%= formatta_prezzo totale_da_fatturare %></td>
+
+        <td><b><%= quantita %></b></td>
+        <td>
+          <%= formatta_prezzo totale %>
+        </td>
+        <td>
+          <% form_tag do %>
+            <%  euro, cents = (prezzo*100).divmod(100) %>
+            Prezzo <%= text_field_tag :prezzo, sprintf('%d.%02d', euro, cents), :size => 6, :maxlength => 6 %>
+            <%= hidden_field_tag :tipologia_id, tipologia.id  %>
+            <%= submit_tag 'Salva' %>
+          <% end %>
+        </td>
+
+
+      </tr>
+    <% end %>
+
+
+
+    <tr>
+      <!--PROVE  DELLE TIPOLOGIE NON A FORFEIT  -->
+      <th style="text-align: left" colspan="8">Prove incluse in tipologie non a forfeit (o aggiuntive) con almeno un rapporto</th>
+    </tr>
+    <% @prove.sort_by{|prova| prova.nome_esteso}.each do |prova| %>
+      <tr>
+      <% quantita_fatturate = @numero_prove[prova.id][0]%>
+      <% quantita_da_fatturare = @numero_prove[prova.id][1]%>
+      <% quantita = quantita_fatturate + quantita_da_fatturare  %>
+      <% prezzo =  prova.prezzo %>
+      <% totale_fatturate =  quantita_fatturate * prezzo %>
+      <% totale_da_fatturare  =  quantita_da_fatturare * prezzo %>
+      <% totale =  quantita * prezzo %>
+      <% sommatoria += totale %>
+
+    <tr>
+        <td><%= link_to prova.nome, prova %> <br/>
+          <small><%= prova.nome_esteso %></small>
+        </td>
+
+        <td><%= quantita_fatturate %></b></td>
+        <td><%= formatta_prezzo totale_fatturate %></td>
+
+        <td><%= quantita_da_fatturare %></b></td>
+        <td><%= formatta_prezzo totale_da_fatturare %></td>
+
+        <td><b><%= quantita %></b></td>
+        <td>
+          <%= formatta_prezzo totale %>
+        </td>
+        <td>
+          <% form_tag do %>
+            <%  euro, cents = (prezzo*100).divmod(100) %>
+            Prezzo <%= text_field_tag :prezzo, sprintf('%d.%02d', euro, cents), :size => 6, :maxlength => 6 %>
+            <%= hidden_field_tag :prova_id, prova.id  %>
+            <%= submit_tag 'Salva' %>
+          <% end %>
+        </td>
+
+
+      </tr>
+    <% end %>
+
+    <tr>
+      <td colspan="8" >&nbsp;</td>
+    </tr>
+
+    <tr>
+      <td colspan="7" >Totale colonna: <br/>(calcolato dunque ai prezzi di listino)</td>
+      <td>
+        <%= formatta_prezzo sommatoria %>
+      </td>
+    </tr>
+
+    <tr>
+      <td colspan="7" >
+        Totale effettivo dei prezzi di tutti i rapporti anno <b><%= @anno %></b> (calcolato ai prezzi effettivi) <br/>
+        N.b non si tiene conto dello sconto in fattura)
+      </td>
+      <td>
+        <%= formatta_prezzo @prezzo_totale_tutti_rapporti %>
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+

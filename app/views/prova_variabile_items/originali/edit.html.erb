@@ -1,0 +1,24 @@
+<h1>Editing prova_variabile_item</h1>
+
+<% form_for(@prova_variabile_item) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :prova_id %><br />
+    <%= f.text_field :prova_id %>
+  </p>
+  <p>
+    <%= f.label :variabile_id %><br />
+    <%= f.text_field :variabile_id %>
+  </p>
+  <p>
+    <%= f.label :da_mostrare %><br />
+    <%= f.check_box :da_mostrare %>
+  </p>
+  <p>
+    <%= f.submit 'Update' %>
+  </p>
+<% end %>
+
+<%= link_to 'Show', @prova_variabile_item %> |
+<%= link_to 'Back', prova_variabile_items_path %>

@@ -1,0 +1,44 @@
+
+
+  <%= mostra_parametro :anteprima_risultati_intestazione %><br />
+  <br />
+
+  <table class ="anteprima_risultati">
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <!-- <th>Rapporto</th> -->
+        <th>Etichettatura</th>
+        <th width ="20px" style =" font-size: 9px;">Data esecuzione prove</th>
+
+        <% @variabili.each do |variabile| %>
+          <th width ="20px" style =" font-size: 8px;background-color: #D8D8D8 ">
+            <%= variabile.nome_esteso %><br />
+            <%= variabile.unita_di_misura %>
+          </th>
+        <% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <%  riga = 1 %>
+      <% @rapporti.each do |rapporto| %>
+        <tr>
+          <td><%= rapporto.campione.cliente.nome %></td>
+          <!-- <td><%= rapporto.to_label %></td> -->
+          <td style =" font-size: 9px;"><%= rapporto.campione.etichetta %></td>
+          <td style =" font-size: 9px;"><%= (I18n.l rapporto.data_esecuzione_prove_inizio) unless  rapporto.data_esecuzione_prove_inizio.nil? %></td>
+          <% @variabili.each do |variabile| %>
+            <td style =" font-size: 9px; text-align: right;">
+              <%= @tabella[riga][variabile.id] %>
+            </td>
+          <% end %>
+        </tr>
+        <% riga += 1 %>
+      <% end%>
+    </tbody>
+  </table>
+
+<br />
+<br />
+<%= mostra_parametro :anteprima_risultati_pie_pagina %>
+

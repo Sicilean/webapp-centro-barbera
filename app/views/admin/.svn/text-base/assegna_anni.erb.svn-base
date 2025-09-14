@@ -1,0 +1,3 @@
+Rapporti senza anno 2010 = <%= @rapporti_errati.size %>
+Campioni senza anno 2010 = <%= @campioni_errati.size %>
+

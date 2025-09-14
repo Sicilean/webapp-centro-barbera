@@ -1,0 +1,17 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  variabile_id: 1
+  rapporto_id: 1
+  data: 2010-02-24
+  valore_numero: 9.99
+  valore_testo: MyString
+  incertezza_di_misura: MyString
+
+two:
+  variabile_id: 1
+  rapporto_id: 1
+  data: 2010-02-24
+  valore_numero: 9.99
+  valore_testo: MyString
+  incertezza_di_misura: MyString

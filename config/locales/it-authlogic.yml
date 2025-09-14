@@ -1,0 +1,43 @@
+
+# authlogic
+it:
+#locale_name: "Italian"
+  authlogic:
+    error_messages:
+      #login_blank: can not be blank
+      login_blank: deve essere presente
+      #login_not_found: is not valid
+      login_not_found: "non e' valida"
+      #login_invalid: should use only letters, numbers, spaces, and .-_@ please.
+      login_invalid: sono permesse solo lettere, numeri, spazio e ._@
+      #consecutive_failed_logins_limit_exceeded: Consecutive failed logins limit exceeded, account is disabled.
+      consecutive_failed_logins_limit_exceeded: Utente disabilitato per troppi tentativi andati a vuoto, mi spiace.
+      #email_invalid: should look like an email address.
+      email_invalid: "deve avere un formato coerente con un indirizzo email"
+      #password_blank: can not be blank
+      password_blank: deve essere presente
+
+      #password_invalid: is not valid
+      password_invalid: non valida
+
+      #not_active: Your account is not active
+      not_active: "il tuo accesso non è attivo"
+
+      #not_confirmed: Your account is not confirmed
+      not_confirmed: "il tuo accesso non è stato confermato"
+
+      #not_approved: Your account is not approved
+      not_approved: "Il tuo accesso non è stato approvato"
+
+      #no_authentication_details: You did not provide any details for authentication.
+      no_authentication_details: "Non hai fornito i dettagli necessari all'autentificazione"
+
+    models:
+      user_session: UserSession 
+    attributes:
+      user_session: 
+        login: login
+        email: email
+        password: password
+        remember_me: remember me
+        remember_me: remember me

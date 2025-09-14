@@ -1,0 +1,103 @@
+9
+
+dir
+678
+svn://svn.iperserver.it/barbera.iperserver.it/trunk/app/views
+svn://svn.iperserver.it/barbera.iperserver.it
+
+
+
+2011-02-01T11:42:09.613619Z
+677
+dante
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+27e177e0-202c-4f32-a523-1304398c3855
+
+custom_variabile_rapporto_items
+dir
+
+notifier
+dir
+
+main
+dir
+
+parametri
+dir
+
+variabile_rapporto_items
+dir
+
+udm_items
+dir
+
+notification
+dir
+
+clienti
+dir
+
+password_resets
+dir
+
+admin
+dir
+
+matrici
+dir
+
+tipologie
+dir
+
+prove
+dir
+
+rapporti_in_lavorazione
+dir
+
+campioni
+dir
+
+prova_tipologia_items
+dir
+
+rapporti
+dir
+
+layouts
+dir
+
+users
+dir
+
+variabili
+dir
+
+user_sessions
+dir
+
+prova_variabile_items
+dir
+
+auto_prova_rapporto_items
+dir
+
+fatture
+dir
+
+prova_rapporto_items
+dir
+

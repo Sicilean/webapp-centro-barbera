@@ -1,0 +1,11 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  prova_id: 1
+  variabile_id: 1
+  da_mostrare: false
+
+two:
+  prova_id: 1
+  variabile_id: 1
+  da_mostrare: false

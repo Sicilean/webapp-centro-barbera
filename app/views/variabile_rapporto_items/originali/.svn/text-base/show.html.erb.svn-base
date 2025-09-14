@@ -1,0 +1,33 @@
+<p>
+  <b>Variabile:</b>
+  <%=h @variabile_rapporto_item.variabile_id %>
+</p>
+
+<p>
+  <b>Rapporto:</b>
+  <%=h @variabile_rapporto_item.rapporto_id %>
+</p>
+
+<p>
+  <b>Data:</b>
+  <%=h @variabile_rapporto_item.data %>
+</p>
+
+<p>
+  <b>Valore numero:</b>
+  <%=h @variabile_rapporto_item.valore_numero %>
+</p>
+
+<p>
+  <b>Valore testo:</b>
+  <%=h @variabile_rapporto_item.valore_testo %>
+</p>
+
+<p>
+  <b>Incertezza di misura:</b>
+  <%=h @variabile_rapporto_item.incertezza_di_misura %>
+</p>
+
+
+<%= link_to 'Edit', edit_variabile_rapporto_item_path(@variabile_rapporto_item) %> |
+<%= link_to 'Back', variabile_rapporto_items_path %>

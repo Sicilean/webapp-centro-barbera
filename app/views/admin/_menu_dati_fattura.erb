@@ -1,0 +1,12 @@
+[
+<%= link_to 'Modifica Fattura', :controller=> :fatture, :action => :edit, :id => @fattura.id %> |
+
+<% if @fattura.pdf_esiste? %>
+  <%= link_to 'Rigenera Pdf Fattura', url_for(:controller =>  :fatture, :action => :crea_pdf, :id => params[:id]),  :confirm => "Sei sicuro? questo comporterà la cancellazione del pdf precedente" %> |
+  <%= link_to 'Mostra Pdf Fattura',               :controller =>  :fatture, :action => :mostra_pdf, :id => params[:id] %>
+  <%= link_to((image_tag 'pdf_icon.gif', :border => 0), :controller =>  :fatture, :action => :mostra_pdf, :id => params[:id]) %>
+<% else %>
+  <%= link_to 'Crea Pdf Fattura', :controller =>  :fatture, :action => :crea_pdf, :id => params[:id] %>
+<% end %>
+
+]

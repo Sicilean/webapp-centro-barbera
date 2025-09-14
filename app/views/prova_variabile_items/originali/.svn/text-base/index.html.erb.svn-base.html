@@ -1,0 +1,24 @@
+<h1>Listing prova_variabile_items</h1>
+
+<table>
+  <tr>
+    <th>Prova</th>
+    <th>Variabile</th>
+    <th>Da mostrare</th>
+  </tr>
+
+<% @prova_variabile_items.each do |prova_variabile_item| %>
+  <tr>
+    <td><%=h prova_variabile_item.prova_id %></td>
+    <td><%=h prova_variabile_item.variabile_id %></td>
+    <td><%=h prova_variabile_item.da_mostrare %></td>
+    <td><%= link_to 'Show', prova_variabile_item %></td>
+    <td><%= link_to 'Edit', edit_prova_variabile_item_path(prova_variabile_item) %></td>
+    <td><%= link_to 'Destroy', prova_variabile_item, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New prova_variabile_item', new_prova_variabile_item_path %>

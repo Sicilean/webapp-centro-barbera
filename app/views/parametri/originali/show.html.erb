@@ -1,0 +1,23 @@
+<p>
+  <b>Codice:</b>
+  <%=h @parametro.codice %>
+</p>
+
+<p>
+  <b>Nome:</b>
+  <%=h @parametro.nome %>
+</p>
+
+<p>
+  <b>Note:</b>
+  <%=h @parametro.note %>
+</p>
+
+<p>
+  <b>Valore:</b>
+  <%=h @parametro.valore %>
+</p>
+
+
+<%= link_to 'Edit', edit_parametro_path(@parametro) %> |
+<%= link_to 'Back', parametri_path %>

@@ -1,0 +1,27 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  udm_item_id: 1
+  nome: MyString
+  nome_esteso: MyString
+  simbolo: MyString
+  funzione: MyString
+  tipo: MyString
+  min: 1.5
+  max: 1.5
+  decimali: 1
+  forza_zero: false
+  note: MyString
+
+two:
+  udm_item_id: 1
+  nome: MyString
+  nome_esteso: MyString
+  simbolo: MyString
+  funzione: MyString
+  tipo: MyString
+  min: 1.5
+  max: 1.5
+  decimali: 1
+  forza_zero: false
+  note: MyString

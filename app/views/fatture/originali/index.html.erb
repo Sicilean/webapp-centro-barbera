@@ -1,0 +1,32 @@
+<h1>Listing fatture</h1>
+
+<table>
+  <tr>
+    <th>Cliente</th>
+    <th>Numero</th>
+    <th>Data emissione</th>
+    <th>Totale</th>
+    <th>Data inizio</th>
+    <th>Data fine</th>
+    <th>Data pagamento</th>
+  </tr>
+
+<% @fatture.each do |fattura| %>
+  <tr>
+    <td><%=h fattura.cliente_id %></td>
+    <td><%=h fattura.numero %></td>
+    <td><%=h fattura.data_emissione %></td>
+    <td><%=h fattura.totale %></td>
+    <td><%=h fattura.data_inizio %></td>
+    <td><%=h fattura.data_fine %></td>
+    <td><%=h fattura.data_pagamento %></td>
+    <td><%= link_to 'Show', fattura %></td>
+    <td><%= link_to 'Edit', edit_fattura_path(fattura) %></td>
+    <td><%= link_to 'Destroy', fattura, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New fattura', new_fattura_path %>

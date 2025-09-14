@@ -1,0 +1,39 @@
+<h1>New fattura</h1>
+
+<% form_for(@fattura) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :cliente_id %><br />
+    <%= f.text_field :cliente_id %>
+  </p>
+  <p>
+    <%= f.label :numero %><br />
+    <%= f.text_field :numero %>
+  </p>
+  <p>
+    <%= f.label :data_emissione %><br />
+    <%= f.date_select :data_emissione %>
+  </p>
+  <p>
+    <%= f.label :totale %><br />
+    <%= f.text_field :totale %>
+  </p>
+  <p>
+    <%= f.label :data_inizio %><br />
+    <%= f.date_select :data_inizio %>
+  </p>
+  <p>
+    <%= f.label :data_fine %><br />
+    <%= f.date_select :data_fine %>
+  </p>
+  <p>
+    <%= f.label :data_pagamento %><br />
+    <%= f.date_select :data_pagamento %>
+  </p>
+  <p>
+    <%= f.submit 'Create' %>
+  </p>
+<% end %>
+
+<%= link_to 'Back', fatture_path %>

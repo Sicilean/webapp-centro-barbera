@@ -1,0 +1,31 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - bundle_cache:/usr/local/bundle
+    depends_on:
+      - db
+    environment:
+      - RAILS_ENV=development
+      - BUNDLE_PATH=/usr/local/bundle
+    tty: true
+    stdin_open: true
+
+  db:
+    image: mysql:5.5
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=barbera_development
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./barbera_development_may_30_2010.sql:/docker-entrypoint-initdb.d/barbera_development_may_30_2010.sql
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:
+  bundle_cache: 

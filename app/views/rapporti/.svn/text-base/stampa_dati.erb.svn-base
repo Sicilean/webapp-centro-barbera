@@ -1,0 +1,73 @@
+<div style =" font-size: smaller;">
+
+  <br/>
+  <h2>Campione:  <%= @rapporto.campione.to_label %></h2><br/>
+  <h2>Rapporto: <%= @rapporto.to_label %></h2><br />
+  <strong>Status:</strong> <%= @rapporto.status %><br/>
+  <br/>
+  <%= mostra_parametro :frase_quaderno_di_lavoro %><br/>
+  <br/>
+  <% if @rapporto.prove_totali.size == 0 %>
+    Rapporto senza prove
+  <% elsif @rapporto.variabili_tutte_inserite? %>
+  <% else %>
+    Dati mancanti: <%= @rapporto.variabile_rapporto_items_mancanti.size %><br/>
+  <% end %>
+
+
+  <strong>Data esecuzione prove:</strong>
+      <% unless @rapporto.data_esecuzione_prove_inizio.nil? %>
+        <% if @rapporto.data_esecuzione_prove_fine.nil? || (@rapporto.data_esecuzione_prove_inizio == @rapporto.data_esecuzione_prove_fine) %>
+          <%= @rapporto.data_esecuzione_prove_inizio.day %>/<%= @rapporto.data_esecuzione_prove_inizio.month %>/<%= @rapporto.data_esecuzione_prove_inizio.year %>
+        <% else %>
+          dal <%= @rapporto.data_esecuzione_prove_inizio.day %>/<%= @rapporto.data_esecuzione_prove_inizio.month %>/<%= @rapporto.data_esecuzione_prove_inizio.year %>
+          al  <%= @rapporto.data_esecuzione_prove_fine.day %>/<%= @rapporto.data_esecuzione_prove_fine.month %>/<%= @rapporto.data_esecuzione_prove_fine.year %>
+        <% end %>
+      <% end %>
+
+  <br />
+  <br />
+
+    <table border ="1" cellpadding="3" cellspacing="0">
+        <tr>
+          <th>Prova/Variabile</th>
+          <th>Formula</th>
+          <th>U.d.m.</th>
+          <th>Dato</th>
+        </tr>
+    <% @prove_totali.each do |@prova| %>
+        <% if  @prova.variabili.size > 1 %>
+          <tr style="height: 0.8cm;">
+            <td colspan="5">
+                <b><%= @prova.nome_esteso %></b>
+            </td>
+          </tr>
+        <% end %>
+        <% @prova.variabili.each do |@variabile| %>
+          <% @variabile_rapporto_items.each {|variabile_rapporto_item|  @variabile_rapporto_item = variabile_rapporto_item if variabile_rapporto_item.variabile == @variabile } %>
+          <tr style="height: 0.8cm;">
+            <td>
+                <b><%= @variabile_rapporto_item.variabile.nome_esteso %></b>
+            </td>
+            <td>
+                <div style =" font-size: smaller;">
+                      <%= @variabile_rapporto_item.variabile.simbolo %>
+                      <%= " = #{@variabile_rapporto_item.variabile.funzione}"  if @variabile_rapporto_item.variabile.tipo == 'funzione'%>
+                </div>
+            </td>
+            <td>
+              <%= @variabile_rapporto_item.udm %>
+            </td>
+            <td style="width: 7cm;">
+                <strong><%=  @variabile_rapporto_item.valore_automatico %></strong>                
+            </td>
+          </tr>
+          <%= render :partial => 'riga_per_stampa_dati', :locals => { :variabile_rapporto_item => @variabile_rapporto_item, :counter => 1 }  %>
+
+        <% end %>
+      <% end %>
+    
+    </table>
+
+  <br />
+</div>

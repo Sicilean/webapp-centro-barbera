@@ -1,0 +1,110 @@
+<br/>
+<h1>Prospetto Clienti con rapporti in sospeso</h1>
+<br/>
+<br/>
+N.b. Vengono inclusi tutti i rapporti non ancora fatturati, con Rdp stampato
+<br/>
+<br/>
+<big>
+  |
+  <% for anno in 2009..(Time.now.year) %>
+    <% if anno == @anno %>
+      Anno <b><%= anno %></b>
+    <% else %>
+      <%= link_to "Vedi anno #{anno}", url_for(:controller => :admin, :action => :clienti_con_rapporti_in_sospeso, :anno => anno) %>
+    <% end %>
+    |
+  <% end %>
+</big>
+
+<br/>
+<br/>
+<% if  @tabella.empty? %>
+  nessun risultato
+<% else %>
+  <table border ="1" cellpadding="3" cellspacing="0">
+    <tr>
+      <th>Cliente</th>
+      <th>&nbsp;</th>
+      <th>Data da</th>
+      <th>Data a</th>
+      <th>Imponibile</th>
+
+      <th>Iva</th>
+      <th>Totale</th>
+
+    </tr>
+    <%
+      sommatoria_imponibile = 0
+      sommatoria_imposte    = 0
+      sommatoria_totale     = 0
+    %>
+
+    <% @tabella.sort_by{|riga| riga[1][:cliente_nome]}.each do |riga| %>
+      <!-- cliente_id è riga[0] -->
+      <%
+        imponibile =  riga[1][:imponibile]
+        imposte    = imponibile * 0.20
+        totale     = imponibile + imposte
+        sommatoria_imponibile += imponibile
+        sommatoria_imposte    += imposte
+        sommatoria_totale     += totale
+      %>
+      <tr>
+        <td>
+           <%= riga[1][:cliente_nome] %>
+        </td>
+        <td align ="center">
+           <%= link_to 'Vedi Rapporti', {:controller => :admin,
+                               :action => :cerca_rapporti,
+                               :giorni => '',
+                               :rapporto_status => 'completo',
+                               :rapporto_sms => '',
+                               :rapporto_email => '',
+                               :tipo_invio => 'conteggio',
+                               :da_fatturare => 'si',
+                               :cliente_id => riga[0],
+                               :mostra =>'si',
+                               "da"=>{"data(1i)"=>"#{@anno}",
+                               "data(2i)"=>"1",
+                               "data(3i)"=>"1"},
+                               "a"=>{"data(1i)"=>"#{@anno}",
+                               "data(2i)"=>"12",
+                               "data(3i)"=>"31"}
+                               }%> | 
+           <%= link_to 'Crea Fattura', {:controller => :fatture,
+                               :action => :new,
+                               :giorni => '',
+                               :cliente_id => riga[0]
+                               }%>
+
+        </td>
+
+        <td>
+           <%= formatta_data riga[1][:data_inizio] %>
+        </td>
+        <td>
+           <%= formatta_data riga[1][:data_fine]  %>
+        </td>
+        <td align ="right">
+           <%= formatta_prezzo imponibile  %>
+        </td>
+        <td align ="right">
+           <%= formatta_prezzo imposte  %>
+        </td>
+        <td align ="right">
+           <%= formatta_prezzo totale  %>
+        </td>
+      </tr>
+
+    <% end %>
+      <tr>
+        <td align ="right" colspan ="4">Totale</td>
+        <td align ="right"><b><%= formatta_prezzo sommatoria_imponibile %></b></td>
+        <td align ="right"><b><%= formatta_prezzo sommatoria_imposte %></b></td>
+        <td align ="right"><b><%= formatta_prezzo sommatoria_totale %></b></td>
+      </tr>
+  </table>
+<% end %>
+
+

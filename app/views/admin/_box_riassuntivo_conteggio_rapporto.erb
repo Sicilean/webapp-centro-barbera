@@ -1,0 +1,47 @@
+Tipologia: [<%= link_to rapporto.tipologia.nome,  rapporto.tipologia %>] <br/>
+<% unless rapporto.prove_totali.size == 0 %>
+  <div id="mini_elenco_prove">
+    Prove incluse:
+    <% if rapporto.tipologia.prove.empty? %>
+      nessuna <br/>
+    <% else %>
+      <br/>
+      <% rapporto.tipologia.prove_ordinate.each do |prova| %>
+        <%= link_to prova.nome, prova %>
+        <% if current_user.is_admin? && !rapporto.tipologia.forfeit %>
+            <%= formatta_prezzo prova.prezzo  %>
+        <% end %>
+        <br />
+      <% end %>
+      <% if current_user.is_admin? %>
+        Prezzo<%= " (a forfeit)" if rapporto.tipologia.forfeit %>:
+        <span style="color:green;"><%= formatta_prezzo rapporto.prezzo_tipologia_automatico %></span>
+        <% unless rapporto.prezzo_tipologia_automatico == rapporto.tipologia.prezzo_automatico %>
+          <span style="color: #999;">(**) list. <%= formatta_prezzo rapporto.tipologia.prezzo_automatico  %></span>
+        <% end %>
+        <br />
+      <% end -%>
+    <%  end %>
+    <%= "<br />Prove aggiuntive: <br/>" unless rapporto.prova_rapporto_items.empty? %>
+    <% rapporto.prova_rapporto_items.each do |prova_rapporto_item| %>
+      <%= link_to "#{prova_rapporto_item.prova.nome}", prova_rapporto_item.prova %>
+      <% if current_user.is_admin? %>
+        <span style="color:green;"><%= formatta_prezzo prova_rapporto_item.prezzo %></span>
+        <% if prova_rapporto_item.prezzo == prova_rapporto_item.prezzo_di_listino %>
+        <% else %>
+          (**) list. <%= formatta_prezzo prova_rapporto_item.prezzo_di_listino  %>
+        <% end %>
+
+      <% end %>
+      <br />
+    <% end %>
+  </div>
+<% end %>
+<br/>
+<% if current_user.is_admin? %>
+  Prezzo totale: <b><span style="color:green;"><%= formatta_prezzo rapporto.prezzo_totale %></span></b>
+  <% if rapporto.prezzo_totale == rapporto.prezzo_totale_di_listino %>
+  <% else %>
+  <span style="color: #999;">(**) list. <%= formatta_prezzo rapporto.prezzo_totale_di_listino  %></span>
+  <% end %>
+<% end %>

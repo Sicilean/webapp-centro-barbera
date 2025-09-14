@@ -1,0 +1,57 @@
+/* prince.css - Stili di base per la generazione PDF con PrinceXML/wkhtmltopdf */
+
+/* Non sovrascrivere i margini già definiti in rdp.css */
+body {
+  /* Mantieni font-family compatibile ma non sovrascrivere layout */
+}
+
+/* Compatibilità con wkhtmltopdf */
+h1, h2, h3, h4, h5, h6 {
+  color: #222;
+  page-break-after: avoid;
+}
+
+/* Assicurati che le tabelle si comportino bene */
+table {
+  border-collapse: collapse;
+  page-break-inside: auto;
+}
+
+/* Non aggiungere bordi extra che possono confliggere */
+td, th {
+  /* Lascia che rdp.css gestisca i bordi */
+}
+
+/* Gestione interruzioni di pagina */
+.page-break-before {
+  page-break-before: always;
+}
+
+.page-break-after {
+  page-break-after: always;
+}
+
+.no-page-break {
+  page-break-inside: avoid;
+}
+
+/* Supporto per wkhtmltopdf - non usa @page ma rispetta i margini del body */
+@media print {
+  body {
+    margin: 0;
+    padding: 2cm 1.5cm 3cm 1.5cm;
+  }
+  
+  .header-section {
+    margin-top: 0;
+  }
+  
+  .footer-section {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1cm 1.5cm;
+    background: white;
+  }
+} 

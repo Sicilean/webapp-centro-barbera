@@ -1,0 +1,305 @@
+/* Global styles with rails-scaffold's basic css */
+
+/* Default Facebook CSS tratto da http://devtacular.com/articles/bkonrad/how-to-style-an-application-like-facebook/ */
+body {
+    font-family: "lucida grande" ,tahoma,verdana,arial,sans-serif;
+    font-size: 11px;
+    color: #333333;
+    }
+h1, h2, h3, h4, h5 {
+  font-size: 16px;
+  color: green;
+  margin: 0px;
+  padding: 0px; }
+
+h1 {
+  font-size: 15px; }
+
+h2 {
+  font-size: 14px; }
+
+h3 {
+  font-size: 13px; }
+
+h4, h5 {
+  font-size: 11px;
+ color: green;}
+
+p {
+  font-family: "lucida grande", tahoma, verdana, arial, sans-serif;
+  font-size: 11px;
+  text-align: left; }
+
+/* Default Anchor Style */
+a {
+    color: #3b5998;
+    outline-style: none;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: bold; }
+a:hover {
+    text-decoration: underline; }
+
+/* menu amministrazione*/
+#menu_amministrazione {
+  border: 2px solid green;
+  padding: 1em;
+  margin-right: 15%;
+  margin-bottom: 1em;
+  background-color: #f0f0f0;
+}
+/* menu amministrazione in sviluppo*/
+#menu_amministrazione_per_localhost {
+  margin-bottom: 1em;
+}
+#flash_notice {
+  border: 2px solid green;
+  padding: 1em;
+  padding-bottom: 1em;
+  padding-top: 1em;
+  color: green;
+  background-color: #f0f0f0;
+  margin-right: 30em;
+}
+
+#flash_error {
+  border: 2px solid red;
+  padding: 1em;
+  margin-bottom: 2em;
+  background-color: #f0f0f0;
+  font: bold smaller sans-serif;
+}
+
+#nota_light {
+color: #999;
+font-size: 10px;
+}
+
+#mini_elenco_prove{
+color: #999;
+font-size: 10px;
+}
+#mini_elenco_prove a {
+    outline-style: none;
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: bold; }
+
+#RapportoDiProva {
+  width:800px;
+  font-family: arial,sans-serif;
+  color: black;
+  line-height: 10pt;
+  margin-left: 2em;
+  padding-top: 4ex;
+  padding-left: 2em;
+  background: white;
+}
+#RapportoDiProva h1, h2, h3, h4, h5 {
+  font-size: 16px;
+  color: black;
+  margin: 0px;
+  padding: 0px;}
+
+#RapportoDiProva h1 {
+  font-size: 30px; }
+
+#RapportoDiProva h2 {
+  font-size: 24px; }
+
+#RapportoDiProva h3 {
+  font-size: 22px; }
+
+#RapportoDiProva h4, h5 {
+  font-size: 18px;}
+
+
+#StampaDati {
+  width:600px;
+  color: black;
+  line-height: 12pt;
+  margin-left: 2em;
+  padding-top: 2ex;
+  padding-left: 2em;
+  background: white;
+}
+
+
+/*
+table.index {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 2px;
+	border-style: outset outset outset outset;
+	border-color: gray gray gray gray;
+	border-collapse: separate;
+	background-color: white;
+}
+table.index th {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+table.index td {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+
+
+table.show {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 2px;
+	border-style: outset outset outset outset;
+	border-color: gray gray gray gray;
+	border-collapse: separate;
+	background-color: white;
+}
+table.show th {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+table.show td {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+
+*/
+
+/*
+.fieldWithErrors {
+  padding: 2px;
+  background-color: red;
+  display: table;
+}
+
+#errorExplanation {
+  width: 400px;
+  border: 2px solid red;
+  padding: 7px;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  background-color: #f0f0f0;
+}
+
+#errorExplanation h2 {
+  text-align: left;
+  font-weight: bold;
+  padding: 5px 5px 5px 15px;
+  font-size: 12px;
+  margin: -7px;
+  background-color: #c00;
+  color: #fff;
+}
+
+#errorExplanation p {
+  color: #333;
+  margin-bottom: 0;
+  padding: 5px;
+}
+
+#errorExplanation ul li {
+  font-size: 12px;
+  list-style: square;
+}
+
+*/
+
+/* Global styles with Francesco's basic css */
+
+ 
+/* START:notice */
+
+/*
+#notice {
+  border: 2px solid red;
+  padding: 1em;
+  margin-bottom: 2em;
+  background-color: #f0f0f0;
+  font: bold smaller sans-serif;
+  font-size: 9pt;
+}
+
+*/
+/* END:notice */
+
+
+/* Styles for main page */
+
+/*
+#banner {
+  background: #387C44;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  border-bottom: 1px solid;  color: gray; 
+  text-align: left;
+}
+
+#banner a {
+    color: #64E986;
+    outline-style: none;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: bold; }
+#banner a:hover {
+    text-decoration: underline; }
+
+#banner img.pic_float {
+    border-style: none;
+    float: left;
+    clear: right;
+    margin: 0 1em 0 1em;
+}
+
+#login_right_zone {
+  text-align: right;
+}
+
+
+#banner big {
+  font-size: 120%;
+  color: #333;
+}
+#columns {
+}
+
+#main {
+  line-height: 12pt;
+  margin-left: 15em;
+  padding-top: 4ex;
+  padding-left: 2em;
+  background: white;
+}
+
+#side {
+  color: #333; 
+  line-height: 6pt;
+  float: left;
+  padding-top: 1em;
+  padding-left: 1em;
+  padding-bottom: 1em;
+  width: 15em;
+  height: 200em;
+  background:  #110;
+  color: yellow;
+}
+
+#side h2 {
+  font-size: 12px;
+  color: yellow;}
+
+
+*/

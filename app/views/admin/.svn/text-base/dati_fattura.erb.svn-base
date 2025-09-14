@@ -1,0 +1,222 @@
+
+<% if @fattura.rapporti.size == 0 %>
+  <br/>
+  Fattura senza rapporti, <%= link_to 'Modifica', :controller => :fatture, :action => :edit, :id => @fattura %> <br/>
+<% else %>
+  <br/>
+  Cliente:  <%= link_to @fattura.cliente.to_label, @fattura.cliente %><br/>
+  Fatt.n.:  <b><%= @fattura.numero %>/<%= @fattura.anno %></b><br/>
+  <br/>
+  <%= render :partial => 'menu_dati_fattura' %>
+  <br />
+  <br />
+  <table border="1" cellspacing="0" cellpadding="3" style="text-align: right">
+    <thead>
+      <tr>
+        <th>Tipo di certificato</th>
+        <th>Quantità</th>
+        <th style="color: #999;text-align: center"><small>Prezzo listino <br/> (se diverso)</small></th>
+        <th style="text-align: center">Prezzo unitario</th>
+        <th>Importo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <%  sommatoria_analisi = 0 %>
+      <% @fattura.tipologie_a_forfeit.uniq.sort_by{|tipologia| tipologia.nome}.each do |tipologia| %>
+      <% quantita = @fattura.numero_di_tipologie(tipologia) %>
+      <% prezzo =  @fattura.prezzo_della_tipologia(tipologia) %>
+      <% totale =  quantita * prezzo %>
+      <tr>
+        <td><%= link_to tipologia.nome, tipologia %><br/>
+          <small><%= tipologia.nome_esteso %></small>
+        </td>
+        <td><b><%= quantita %></b></td>
+        <td style="color: #999;"><%= "<i>forfeit</i> " if  tipologia.forfeit %><%= (formatta_prezzo tipologia.prezzo_automatico) if  tipologia.prezzo_automatico != prezzo %></td>
+
+        <td>
+          <% if tipologia.forfeit %>
+            <% form_tag do %>
+              <%  euro, cents = (prezzo*100).divmod(100) %>
+              Prezzo <%= text_field_tag :prezzo, sprintf('%d.%02d', euro, cents), :size => 6, :maxlength => 6 %>
+              <%= hidden_field_tag :tipologia_id, tipologia.id  %>
+              <%= submit_tag 'Salva' %>
+            <% end %>
+          <% else %>
+            <%= formatta_prezzo prezzo %>
+          <% end %>
+        </td>
+
+        <td>
+          <%= formatta_prezzo totale %>
+          <%  sommatoria_analisi += totale %>
+        </td>
+      </tr>
+      <% end %>
+
+
+
+      <tr>
+        <!--PROVE  DELLE TIPOLOGIE NON A FORFEIT  -->
+        <th style="text-align: left"><%= "Prove delle tipologie non a forfeit" unless @fattura.auto_prova_rapporto_items.empty? %> &nbsp;</th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th></th>
+      </tr>
+
+          <% @fattura.tipologie_non_a_forfeit.uniq.each do |tipologia| %>
+          <% tipologia.prove.uniq.sort_by{|prova| prova.nome_esteso}.each do |prova| %>
+            <% quantita = @fattura.numero_di_tipologie(tipologia) %>
+            <% prezzo = @fattura.prezzo_della_auto_prova(prova) %>
+            <% totale =  quantita * prezzo %>
+            <% sommatoria_analisi += totale %>
+
+            <tr>
+              <td><%= link_to prova.nome, prova %><br/><small><%= prova.nome_esteso %></small></td>
+              <td><%= quantita %></td>
+              <td style="color: #999;"><%= formatta_prezzo (prova.prezzo) if prova.prezzo != prezzo %></td>
+
+              <td>
+                <% form_tag do  %>
+                  <%  euro, cents = (prezzo*100).divmod(100) %>
+                  Prezzo <%= text_field_tag :prezzo, sprintf('%d.%02d', euro, cents), :size => 6, :maxlength => 6 %>
+                  <%= hidden_field_tag :auto_prova_id, prova.id  %>
+                  <%= submit_tag 'Salva' %>
+                <% end %>
+              </td>
+
+              <td><%= formatta_prezzo totale %></td>
+            </tr>
+          <% end %>
+        <% end %>
+
+
+
+
+      <tr>
+        <!-- PROVE AGGIUNTIVE -->
+        <th style="text-align: left"><%= "Prove aggiuntive" unless @fattura.prove.empty? %> &nbsp;</th>
+        <th></th>
+        <th></th>
+        <th></th>
+        <th></th>
+      </tr>
+      <% @fattura.prove.uniq.sort_by{|prova| prova.nome_esteso}.each do |prova| %>
+      <tr>
+        <% quantita = @fattura.numero_di_prove(prova) %>
+        <% prezzo = @fattura.prezzo_della_prova(prova) %>
+        <% totale =  quantita * prezzo %>
+        <td><%= link_to prova.nome, prova %><br/><small><%= prova.nome_esteso %></small></td>
+        <td><b><%= quantita %></b></td>
+        <td style="color: #999;"><%= formatta_prezzo (prova.prezzo) if prova.prezzo != prezzo %></td>
+
+        <td>
+          <% form_tag do  %>
+            <%  euro, cents = (prezzo*100).divmod(100) %>
+            Prezzo <%= text_field_tag :prezzo, sprintf('%d.%02d', euro, cents), :size => 6, :maxlength => 6 %>
+            <%= hidden_field_tag :prova_id, prova.id  %>
+            <%= submit_tag 'Salva' %>
+          <% end %>
+        </td>
+
+        <td>
+          <%= formatta_prezzo totale %>
+          <% sommatoria_analisi += totale %>
+        </td>
+      </tr>
+      <% end %>
+
+      <tr>
+        <td colspan="5" >&nbsp;</td>
+      </tr>
+      <tr>
+        <td colspan="4" >Totale analisi:</td>
+        <td>
+          <%= formatta_prezzo @fattura.totale_analisi %>
+          <%= "<br />ERR Totale analisi #{@fattura.totale_analisi} diverso da sommatoria importi #{sommatoria_analisi} (Avvertire Francesco)" if  @fattura.totale_analisi != sommatoria_analisi  %>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="4" >
+          <% form_tag do %>
+            Sconto % <%= text_field_tag :percentuale_sconto,  @fattura.percentuale_sconto, :size => 4, :maxlength => 4 %>
+            <%= submit_tag 'Salva' %>
+          <% end %>
+        </td>
+        <td><%= formatta_prezzo @fattura.sconto %> </td>
+      </tr>
+      <tr>
+        <td colspan="4">Imponibile:</td>
+        <td> <%= formatta_prezzo @fattura.imponibile %></td>
+      </tr>
+      <tr>
+        <td colspan="4" >Imposta: </td>
+        <td><%= formatta_prezzo @fattura.imposta %></td>
+      </tr>
+      <tr>
+        <td colspan="4" > Totale fattura:</td>
+        <td> <b><%= formatta_prezzo @fattura.totale %></b></td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <br/>
+  <br/>
+  <h2>Analitico rapporti</h2>
+  <br/>
+  <br/>
+            
+  <!-- ####  BLOCCO copiato da cerca rapporti (senza VARIE COSE e non solo gli IF di email ed sms) -->
+  <div class="active-scaffold blue-theme">
+    <div class="active-scaffold-header">
+      <table border ="1" cellpadding="6" cellspacing="0">
+        <tr>
+          <th colspan="4">Links</th>
+          <th>Campione</th>
+          <th>Tipologia</th>
+          <th>Data stampa Rdp</th>
+          <th>Cliente</th>
+          <th>Status</th>
+          <th>Data richiesta</th>
+          <th>Data scadenza</th>
+          <th>Conteggio</th>" 
+        </tr>
+        <% even_odd = 0 %>
+        <%  @fattura.rapporti.sort_by{|rapporto| rapporto.tipologia_id}.each do |rapporto| %>
+          <%
+          even_odd = 1 - even_odd
+          if even_odd == 0
+             record_class = "record even-record"
+          else
+             record_class = "record"
+          end
+          %>
+            <tr class="<%= record_class %>">
+              <td>
+                <%= link_to 'Modifica', edit_rapporto_path(rapporto) %> &nbsp;
+              </td>
+              <td><%= dati_rapporto_link_column(rapporto) %></td>
+              <td><%= stampa_dati_link_column(rapporto) %></td>
+              <td><%= stampa_rapporto_link_column(rapporto) %></td>
+              <td><%= link_to rapporto.campione.to_label,  edit_campione_path(rapporto.campione) %></td>
+              <td><%= rapporto.tipologia.to_label %></td>
+              <td><%= rapporto.data_stampa.strftime("%d-%m-%y") unless rapporto.data_stampa.nil? %></td>
+              <td><%= link_to rapporto.campione.cliente.nome, rapporto.campione.cliente %></td>
+              <td><%= rapporto.status %></td>
+              <td><%= rapporto.data_richiesta.strftime("%d-%m-%y") unless rapporto.data_richiesta.nil? %></td>
+              <td><%= I18n.l rapporto.data_scadenza unless rapporto.data_scadenza.nil? %></td>
+                <td>
+                 <%= render :partial => 'box_riassuntivo_conteggio_rapporto', :locals => { :rapporto =>  rapporto } %>
+                </td>
+            </tr>
+        <% end %>
+
+      </table>
+    </div>
+  </div>
+  <!-- ######### FINE BLOCCO -->
+
+
+<% end %>
+

@@ -1,0 +1,38 @@
+<p>
+  <b>Cliente:</b>
+  <%=h @fattura.cliente_id %>
+</p>
+
+<p>
+  <b>Numero:</b>
+  <%=h @fattura.numero %>
+</p>
+
+<p>
+  <b>Data emissione:</b>
+  <%=h @fattura.data_emissione %>
+</p>
+
+<p>
+  <b>Totale:</b>
+  <%=h @fattura.totale %>
+</p>
+
+<p>
+  <b>Data inizio:</b>
+  <%=h @fattura.data_inizio %>
+</p>
+
+<p>
+  <b>Data fine:</b>
+  <%=h @fattura.data_fine %>
+</p>
+
+<p>
+  <b>Data pagamento:</b>
+  <%=h @fattura.data_pagamento %>
+</p>
+
+
+<%= link_to 'Edit', edit_fattura_path(@fattura) %> |
+<%= link_to 'Back', fatture_path %>

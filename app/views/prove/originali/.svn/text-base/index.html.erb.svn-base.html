@@ -1,0 +1,32 @@
+<h1>Listing prove</h1>
+
+<table>
+  <tr>
+    <th>Matrice</th>
+    <th>Nome</th>
+    <th>Nome esteso</th>
+    <th>Metodo di prova</th>
+    <th>Subappalto</th>
+    <th>Prezzo</th>
+    <th>Note</th>
+  </tr>
+
+<% @prove.each do |prova| %>
+  <tr>
+    <td><%=h prova.matrice_id %></td>
+    <td><%=h prova.nome %></td>
+    <td><%=h prova.nome_esteso %></td>
+    <td><%=h prova.metodo_di_prova %></td>
+    <td><%=h prova.subappalto %></td>
+    <td><%=h prova.prezzo %></td>
+    <td><%=h prova.note %></td>
+    <td><%= link_to 'Show', prova %></td>
+    <td><%= link_to 'Edit', edit_prova_path(prova) %></td>
+    <td><%= link_to 'Destroy', prova, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New prova', new_prova_path %>

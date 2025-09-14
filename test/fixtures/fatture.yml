@@ -1,0 +1,19 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+
+one:
+  cliente_id: 1
+  numero: 1
+  data_emissione: 2010-08-25
+  totale: 1.5
+  data_inizio: 2010-08-25
+  data_fine: 2010-08-25
+  data_pagamento: 2010-08-25
+
+two:
+  cliente_id: 1
+  numero: 1
+  data_emissione: 2010-08-25
+  totale: 1.5
+  data_inizio: 2010-08-25
+  data_fine: 2010-08-25
+  data_pagamento: 2010-08-25

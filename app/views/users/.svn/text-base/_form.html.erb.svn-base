@@ -1,0 +1,31 @@
+  <p>
+    <%= f.label :nome %><br />
+    <%= f.text_field :nome, :size => 28, :maxlength => 30 %>
+  </p>
+
+  <p>
+    <%= f.label :email %><br />
+    <%= f.text_field :email %>
+  </p>
+  <% unless user_role_types_available_for_current_user.empty? %>
+    <p>
+      <%= f.label :role, "Ruolo" %><br />
+      <%= select 'user', 'role', user_role_types_available_for_current_user %>
+    </p>
+  <% end %>
+
+  <% if current_user.is_admin_or_operator? %>
+    <p>
+      <%= f.label :cliente %><br />
+      <%= select 'user', 'cliente_id', [['--', '']]+Cliente.all.map{|x| [x.nome, x.id]}  %>
+    </p>
+  <% end %>
+  <p>
+    <%= f.label :password %><br />
+    <%= f.password_field :password %>
+  </p>
+  <p>
+    <%= f.label :password_confirmation %><br />
+    <%= f.password_field :password_confirmation %>
+  </p>
+

@@ -1,0 +1,99 @@
+/* Global styles with rails-scaffold's basic css */
+
+/* Default Facebook CSS tratto da http://devtacular.com/articles/bkonrad/how-to-style-an-application-like-facebook/ */
+/* Prince http://www.princexml.com/doc/7.0/properties/ */
+
+@page {
+  size: A4 landscape;
+  /* margin: 1.3cm; */
+  /* top, right, bottom and left page margins */
+  margin:  1.3cm 0.8cm 1.3cm 0.8cm;
+  
+  @top-right {
+    content: string(title);
+    font-style: italic;
+  }
+  @top-left {
+    content: string(source);
+    font-style: italic;
+  }
+  @bottom-right {
+    font-size: 9px;
+    content: "pag. " counter(page) " di " counter(pages);
+    vertical-align: top;
+    padding-top: 1em;
+  }
+}
+
+/*
+Prince fonts:
+  per il font 'Times' metti 'serif'
+  vedi http://www.princexml.com/doc/7.0/fonts/
+Fonts microsoft a disposizione:
+andale, arial, comic, curier, georgia, impact, times, trebuc, verdana, webdings
+*/
+body {
+    font-family: serif, times, helvetica,tahoma,verdana,arial,sans-serif;
+    font-size: 11px;
+    color: black;
+    line-height: 7pt;
+    background: white;
+    margin-left: 0%;
+    padding-top: 0em;
+    padding-left: 0em;
+    }
+h1, h2, h3, h4, h5 {
+  font-size: 16px;
+  margin: 0px;
+  padding: 0px; }
+
+h1 {
+  font-size: 24px; }
+
+h2 {
+  font-size: 18px; }
+
+h3 {
+  font-size: 17px; }
+
+h4, h5 {
+  font-size: 14px;}
+
+
+table.center {
+    margin-left:auto;
+    margin-right:auto;
+    text-align:left;}
+table.risultati {
+    margin-left:auto;
+    margin-right:auto;
+    text-align:left;
+    font-size: 9px;}
+
+table.anteprima_risultati {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 0px;
+	border-style: outset outset outset outset;
+	border-color: gray gray gray gray;
+	border-collapse: separate;
+	background-color: white;
+}
+table.anteprima_risultati th {
+        text-align: center;
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+table.anteprima_risultati td {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+
+

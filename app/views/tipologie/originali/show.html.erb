@@ -1,0 +1,33 @@
+<p>
+  <b>Matrice:</b>
+  <%=h @tipologia.matrice_id %>
+</p>
+
+<p>
+  <b>Nome:</b>
+  <%=h @tipologia.nome %>
+</p>
+
+<p>
+  <b>Nome esteso:</b>
+  <%=h @tipologia.nome_esteso %>
+</p>
+
+<p>
+  <b>Forfait:</b>
+  <%=h @tipologia.forfeit %>
+</p>
+
+<p>
+  <b>Prezzo:</b>
+  <%=h @tipologia.prezzo %>
+</p>
+
+<p>
+  <b>Note:</b>
+  <%=h @tipologia.note %>
+</p>
+
+
+<%= link_to 'Edit', edit_tipologia_path(@tipologia) %> |
+<%= link_to 'Back', tipologie_path %>

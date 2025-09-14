@@ -1,0 +1,22 @@
+development:
+  adapter: mysql
+  encoding: utf8
+  reconnect: false
+  database: barbera_development
+  pool: 5
+  username: root
+  password: password
+  host: db
+  port: 3306
+
+production:
+  adapter: mysql
+  encoding: utf8
+  reconnect: false
+  database: barbera_production
+  pool: 5
+  username: root
+  password: password
+  host: db
+  port: 3306
+

@@ -1,0 +1,277 @@
+
+<div style ="height: 7cm;">
+  <%= mostra_parametro :fattura_stampa_intestazione %>
+</div>
+<br />
+    <h1>
+      FATTURA Nr. <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @fattura.numero %></span>
+      del <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @fattura.data_emissione.strftime("%d/%m/%y") %></span>
+    </h1>
+  <br/>
+
+<table>
+  <tr>
+    <td style="width: 11cm">
+      &nbsp;
+    </td>
+    <td>
+      <div style = "font-size: 12px;">
+        Spettabile<br/>
+        <span style ='<%= @style_nascosto_se_stampa_modello_vuoto-%>'>
+        <%= @fattura.cliente.denominazione %><br/>
+        <%= @fattura.indirizzo_automatico %><br/>
+        <%= "#{@fattura.cap_automatico} #{@fattura.comune_automatico} (#{@fattura.provincia_automatico})" %> <br/>
+        P.I.: <%= @fattura.cliente.partita_iva %><br/>
+        </span>
+      </div>
+    </td>
+  </tr>
+</table>
+
+<br/>
+<br/>
+<!--
+<div style = "font-size: 8px;">
+  <span style ='<%= @style_nascosto_se_stampa_modello_vuoto-%>'>
+    <%= mostra_parametro :fattura_frase_prima_delle_date_dal_al %>
+    dal <%= @fattura.data_inizio.strftime("%d/%m/%y") unless @fattura.data_inizio.nil? %> al <%= @fattura.data_fine.strftime("%d/%m/%y") unless  @fattura.data_fine.nil? %>. <br/>
+  </span>
+</div>
+-->
+<div style="height: 3cm;border:0px;clear: both;" >
+</div>
+
+
+<div style="height: 8cm;border:0px;clear: both; font-size: 12px;" >
+  <table class="fattura_tabella_prezzi" border="1" cellspacing="0" cellpadding="3" style="text-align: right">
+    <tr>
+      <th>Descrizione</th>
+      <th>Quantità</th>
+      <th>Prezzo</th>
+      <th style="width: 2cm">% Sconto</th>
+      <th>Importo</th>
+      <th style="width: 1.3cm">% IVA</th>
+
+
+    <tr style="height: 7cm; border: 0px">
+      <td style="text-align:left;">
+        <%= mostra_parametro :fattura_frase_fissa %><br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <%= mostra_parametro :fattura_condizioni_di_pagamento %><br/>
+        <br/>
+        <%= mostra_parametro :fattura_dati_bancari %></td>
+      <td>1</td>
+      <td><%=  formatta_prezzo_senza_euro @fattura.totale_analisi %></td>
+      <td><%= @fattura.percentuale_sconto %></td>
+      <td><%=  formatta_prezzo_senza_euro @fattura.totale_analisi %></td>
+      <td><%=  (IVA*100).to_i %></td>
+
+    </tr>
+  </table>
+</div>
+
+
+<div style="height: 1cm;border:0px;clear: both;" >
+</div>
+
+<br />
+<%= mostra_parametro :fattura_frase_contributo_conai_assolto %><br />
+<br />
+<br />
+<div style="font-size: 12px; height: 3.5cm " >
+  <table class="fattura_tabella_prezzi" border="1" cellspacing="0" cellpadding="3" style="text-align: right">
+
+    <tr>
+      <td colspan="4">Totale €.</td>
+      <td style="width: 3cm"><%=  formatta_prezzo_senza_euro @fattura.totale_analisi %></td>
+    </tr>
+    <tr>
+      <td  colspan="4">Sconto €.</td>
+      <td><%= formatta_prezzo_senza_euro @fattura.sconto %></td>
+    </tr>
+
+    <tr>
+      <td  colspan="4">Imponibile €.</td>
+      <td> <%= formatta_prezzo_senza_euro @fattura.imponibile %></td>
+    </tr>
+    <tr>
+      <td colspan="4">Imposta €.</td>
+      <td> <%= formatta_prezzo_senza_euro @fattura.imposta %></td>
+    </tr>
+
+    <tr>
+      <td style="height: 1cm;" colspan="4">Totale Documento €.</td>
+      <td> <b><%= formatta_prezzo_senza_euro @fattura.totale %></b></td>
+    </tr>
+  </table>
+</div>
+
+
+<!-- ALLEGATO A - CAMBIO PAGINA -->
+
+<div style="page-break-before: always" ></div>
+<small>
+FATTURA Nr. <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @fattura.numero %></span>
+del <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @fattura.data_emissione.strftime("%d/%m/%y") %></span><br />
+Cliente: <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><i><%= @fattura.cliente.denominazione %></i></span>  <br />
+</small>
+<br />
+<h2>ALLEGATO A</h2>
+<br />
+<br />
+<%= mostra_parametro :fattura_allegato_A_intestazione %>
+<br />
+<br />
+
+
+<table class="fattura_allegato_a" border="1" cellspacing="0" cellpadding="3" style="text-align: center">
+  <thead>
+    <tr>
+      <th>R.d.p. n.</th>
+      <th>Data</th>
+      <th>Tipologia</th>
+      <th>Prezzo totale</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%  sommatoria_rapporti = 0 %>
+    <% @fattura.rapporti.sort_by{|rapporto| rapporto.numero}.each do |rapporto| %>
+      <% prezzo    = rapporto.prezzo_totale %>
+      <% sommatoria_rapporti += prezzo %>
+
+      <tr>
+        <td style="text-align:center;"><%= rapporto.numero %></td>
+        <td><%= formatta_data rapporto.data_stampa %></td>
+        <td style="text-align:left; line-height:58%">
+          <% if rapporto.tipologia.forfeit %>
+            <b><%= rapporto.tipologia.nome_esteso %></b>
+          <!-- PER TIPOLOGIE NON A FORFEIT mostro l'analitico -->
+          <% else %>
+            <b><%= rapporto.tipologia.nome_esteso %></b>:<br />
+            <br />
+            <% controllo_prezzo_a_scalare = prezzo %>
+            <% rapporto.prova_rapporto_items.each do |prova_rapporto_item| %>
+              <span style='font-size: 8px; white-space:nowrap;'>
+                <%= prova_rapporto_item.prova.nome_esteso %> &nbsp;<%= formatta_prezzo prova_rapporto_item.prezzo %>
+                &nbsp;&nbsp;
+                <% controllo_prezzo_a_scalare -=  prova_rapporto_item.prezzo %>
+              </span>
+            <% end %>
+            <%= "errore: sommatoria prezzi non esatta (avvertire Francesco)" if !rapporto.prova_rapporto_items.empty? && controllo_prezzo_a_scalare != 0 %>
+          <% end %>
+        </td>
+        <td style="text-align:right;"><%= formatta_prezzo prezzo %></td>
+      </tr>
+    <% end %>
+      <tr style="page-break-before: avoid">
+        <th colspan="3" style="text-align:right;">Totale <sup>(*)</sup></th>
+        <th style="text-align:right;"><%=  formatta_prezzo sommatoria_rapporti %></th>
+      </tr>
+  </tbody>
+</table>
+<div style="page-break-before: avoid">
+  <br />
+  <br />
+  <sup>(*)</sup> <%= mostra_parametro :fattura_allegato_nota_su_totale %><br />
+</div>
+
+<%= "ERRORE - la somma degli importi qui sopra #{formatta_prezzo sommatoria_rapporti} ed il totale analisi della fattura fattura #{formatta_prezzo @fattura.totale_analisi} non coincidono: avvertire FRANCESCO" if sommatoria_rapporti != @fattura.totale_analisi %>
+
+
+
+
+<!-- ALLEGATO B - CAMBIO PAGINA -->
+
+<div style="page-break-before: always" ></div>
+<small>
+FATTURA Nr. <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @fattura.numero %></span>
+del <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @fattura.data_emissione.strftime("%d/%m/%y") %></span><br />
+Cliente: <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><i><%= @fattura.cliente.denominazione %></i></span>  <br />
+</small>
+<br />
+<h2>ALLEGATO B</h2>
+<br />
+<br />
+<%= mostra_parametro :fattura_allegato_B_intestazione %>
+<br />
+<br />
+
+
+<table class="fattura_allegato_b" border="1" cellspacing="0" cellpadding="3" style="text-align: center">
+  <thead>
+    <tr>
+      <th style="text-align:left;">&nbsp;</th>
+      <th>Quantità</th>
+      <th style="text-align: center">Prezzo unitario</th>
+      <th>Prezzo totale</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%  sommatoria_analisi = 0 %>
+    <!-- TIPOLOGIE A FORFEIT -->
+    <% @fattura.tipologie_a_forfeit.uniq.each do |tipologia| %>
+      <% prezzo    = @fattura.prezzo_della_tipologia(tipologia) %>
+      <% quantita  = @fattura.numero_di_tipologie(tipologia) %>
+      <% totale    = prezzo * quantita %>
+      <% sommatoria_analisi += totale %>
+
+      <tr>
+        <td style="text-align:left;"><%= tipologia.nome_esteso %></td>
+          <td style="text-align:center;"><%= quantita %></td>
+        <td><%= formatta_prezzo prezzo %></td>
+        <td><%= formatta_prezzo totale %></td>
+      </tr>
+    <% end %>
+    <!-- PROVE  DELLE TIPOLOGIE NON A FORFEIT  -->
+    <% @fattura.tipologie_non_a_forfeit.uniq.each do |tipologia| %>
+      <% tipologia.prove.uniq.sort_by{|prova| prova.nome_esteso}.each do |prova| %>
+        <% quantita = @fattura.numero_di_tipologie(tipologia) %>
+        <% prezzo = @fattura.prezzo_della_auto_prova(prova) %>
+        <% totale =  quantita * prezzo %>
+        <% sommatoria_analisi += totale %>
+
+        <tr>
+          <td style="text-align:left;"><%= prova.nome_esteso %></td>
+          <td style="text-align:center;"><%= quantita %></td>
+        <td><%= formatta_prezzo prezzo %></td>
+        <td><%= formatta_prezzo totale %></td>
+        </tr>
+      <% end %>
+    <% end %>
+
+    <!-- PROVE AGGIUNTIVE -->
+    <% @fattura.prove.uniq.sort_by{|prova| prova.nome_esteso}.each do |prova| %>
+      <% quantita = @fattura.numero_di_prove(prova) %>
+      <% prezzo = @fattura.prezzo_della_prova(prova) %>
+      <% totale =  quantita * prezzo %>
+      <% sommatoria_analisi += totale %>
+
+      <tr>
+        <td style="text-align:left;"><%= prova.nome_esteso %></td>
+          <td style="text-align:center;"><%= quantita %></td>
+        <td><%= formatta_prezzo prezzo %></td>
+        <td><%= formatta_prezzo totale %></td>
+      </tr>
+    <% end %>
+    <!-- PROVE AGGIUNTIVE  fine-->
+
+      <tr style="page-break-before: avoid">
+        <th colspan="3" style="text-align:right;">Totale <sup>(*)</sup></th>
+        <th style="text-align:right;"><%=  formatta_prezzo sommatoria_analisi %></th>
+      </tr>
+
+  </tbody>
+</table>
+<div style="page-break-before: avoid">
+  <br />
+  <br />
+  <sup>(*)</sup> <%= mostra_parametro :fattura_allegato_nota_su_totale %><br />
+</div>
+
+  <%= "ERRORE - la somma degli importi qui sopra #{formatta_prezzo sommatoria_analisi} ed il totale delle analisi nel DB della fattura #{formatta_prezzo @fattura.totale_analisi} non coincidono: avvertire FRANCESCO" if sommatoria_analisi != @fattura.totale_analisi %>

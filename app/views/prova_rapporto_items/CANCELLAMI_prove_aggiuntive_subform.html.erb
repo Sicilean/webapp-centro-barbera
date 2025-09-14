@@ -1,0 +1,55 @@
+<h1><big>TEST</big></h1>
+    <table cellpadding="0" cellspacing="0">
+      <thead>
+        <tr>
+          <th><label>Prova</label></th>
+        </tr>
+      </thead>
+      <tbody id="as_rapporti-<%= @record.id -%>-prova_rapporto_items-subform-list">
+        <% @contatore = 0 %>
+        <% for prova_rapporto_item in @record.prova_rapporto_items %>
+          <tr class="association-record-errors">
+            <td colspan="3" id="as_rapporti-prova_rapporto_item-<%= @record.id -%>-<%= @contatore -%>-messages">
+            </td>
+          </tr>
+
+          <tr class="association-record  ">
+            <td>
+              <dl>
+                <dt>
+                  <label for="record_prova_<%= @record.id -%>_prova_rapporto_items_<%= prova_rapporto_item.id -%>">Prova</label>
+                </dt>
+                <dd>
+                  <select class="prova-input" id="record_prova_<%= @record.id -%>_prova_rapporto_items_<%= prova_rapporto_item.id -%>" name="record[prova_rapporto_items][<%= prova_rapporto_item.id -%>][prova][id]"><option value="">- seleziona -</option>
+                    <% for prova in @record.tipologia.matrice.prove %>
+                      <option value="<%= prova.id -%>"><%= @record.tipologia.matrice.nome-%>-<%= prova.nome -%></option>
+                    <% end %>
+                      <option value="105">Enologia-Anidr.S.L. met. rap.</option>
+                      <option value="33">Enologia-Anidr.Solf x distil.</option>
+                      <option value="31" selected="selected">Enologia-Anidr.Solf.Totale</option>
+                      <option value="75">Enologia-Antociani Totali</option>
+                  </select>
+                  <span class="description"></span>
+                </dd>
+              </dl>
+            </td>
+            <td class="actions">
+              <a class="destroy" href="#" onclick="$(this).up(&quot;.association-record&quot;).remove(); return false;">Rimuovi</a>
+              <input type="hidden" name="record[prova_rapporto_items][<%= prova_rapporto_item.id -%>][id]" value="<%= prova_rapporto_item.id -%>" />
+            </td>
+          </tr>
+          <% @contatore += 1 %>
+        <% end %>
+
+
+          </tbody>
+    </table>
+    <div class="footer-wrapper">
+      <div class="footer">
+                <input onclick="new Ajax.Request(&quot;/rapporti/edit_associated?association=prova_rapporto_items&amp;id=<%= @record.id -%>&quot;, {asynchronous: true, method: 'get', evalScripts: true, onFailure: function(){ActiveScaffold.report_500_response(&quot;as_rapporti-active-scaffold&quot;)}});" type="button" value="Creane un altro" />
+      </div>
+    </div>
+    <script type="text/javascript">
+    //Rico.Corner.round($$('#as_rapporti-<%= @record.id -%>-prova_rapporto_items-subform .footer-wrapper').first(), {color: 'fromElement', bgColor: 'fromParent', compact: false});
+    </script>
+

@@ -1,0 +1,50 @@
+<h1>Listing clienti</h1>
+
+<table>
+  <tr>
+    <th>Nome</th>
+    <th>Denominazione</th>
+    <th>Codice</th>
+    <th>Indirizzo</th>
+    <th>Cap</th>
+    <th>Comune</th>
+    <th>Provincia</th>
+    <th>Partita iva</th>
+    <th>Codice fiscale</th>
+    <th>Tel</th>
+    <th>Fax</th>
+    <th>Email</th>
+    <th>Cellulare per sms</th>
+    <th>Titolare cellulare</th>
+    <th>Password</th>
+    <th>Note</th>
+  </tr>
+
+<% @clienti.each do |cliente| %>
+  <tr>
+    <td><%=h cliente.nome %></td>
+    <td><%=h cliente.denominazione %></td>
+    <td><%=h cliente.codice %></td>
+    <td><%=h cliente.indirizzo %></td>
+    <td><%=h cliente.cap %></td>
+    <td><%=h cliente.comune %></td>
+    <td><%=h cliente.provincia %></td>
+    <td><%=h cliente.partita_iva %></td>
+    <td><%=h cliente.codice_fiscale %></td>
+    <td><%=h cliente.tel %></td>
+    <td><%=h cliente.fax %></td>
+    <td><%=h cliente.email %></td>
+    <td><%=h cliente.cellulare_per_sms %></td>
+    <td><%=h cliente.titolare_cellulare %></td>
+    <td><%=h cliente.password %></td>
+    <td><%=h cliente.note %></td>
+    <td><%= link_to 'Show', cliente %></td>
+    <td><%= link_to 'Edit', edit_cliente_path(cliente) %></td>
+    <td><%= link_to 'Destroy', cliente, :confirm => 'Are you sure?', :method => :delete %></td>
+  </tr>
+<% end %>
+</table>
+
+<br />
+
+<%= link_to 'New cliente', new_cliente_path %>

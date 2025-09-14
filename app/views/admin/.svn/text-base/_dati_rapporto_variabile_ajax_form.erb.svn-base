@@ -1,0 +1,41 @@
+<% variabile_rapporto_item = @variabile_rapporto_item if variabile_rapporto_item.nil? %>
+  <% if variabile_rapporto_item.variabile.tipo == 'input-testo' %>
+    <strong>"<%= variabile_rapporto_item.valore_testo %>" <%= variabile_rapporto_item.udm %></strong>
+  <% else %>
+    <strong><%= number_with_precision(variabile_rapporto_item.valore_numero, :precision => variabile_rapporto_item.variabile.decimali) %>  <%= variabile_rapporto_item.udm %></strong>
+  <% end %>
+<% unless variabile_rapporto_item.valore_numero.nil? %>
+  <br />
+  <div style='color:red;' >
+    <% unless (variabile_rapporto_item.variabile.min.blank? || variabile_rapporto_item.valore_numero.nil?)%>
+      <%= "Nota: Valore inferiore al minimo: #{number_with_precision(variabile_rapporto_item.variabile.min, :precision => variabile_rapporto_item.variabile.decimali) } #{variabile_rapporto_item.udm}" if  variabile_rapporto_item.valore_numero < variabile_rapporto_item.variabile.min %>
+    <% end %>
+    <% unless (variabile_rapporto_item.variabile.max.blank? || variabile_rapporto_item.valore_numero.nil?)%>
+      <%= "Nota: Valore superiore al massimo: #{number_with_precision(variabile_rapporto_item.variabile.max, :precision => variabile_rapporto_item.variabile.decimali) } #{variabile_rapporto_item.udm}" if  variabile_rapporto_item.valore_numero > variabile_rapporto_item.variabile.max %>
+    <% end %>
+  </div>
+<% end %>
+<% unless variabile_rapporto_item.rapporto.fatturato? %>
+  <% form_remote_tag :update => "update_div_variabile_rapporto_#{variabile_rapporto_item.id}",
+    :url => {:action => '_dati_rapporto_variabile_ajax_form', :id => variabile_rapporto_item.id} do %>
+      <% if variabile_rapporto_item.variabile.tipo == 'input-testo' %>
+        <div style='color:red;'>
+          <%= error_message_on :variabile_rapporto_item, :valore_testo, :prepend_text => 'Errore: ' %>
+        </div>
+        Testo: <%= text_field_tag :valore, variabile_rapporto_item.valore_testo,
+                  :maxlength => 50,
+                  :size => 30,
+                  :value => variabile_rapporto_item.valore_testo %>
+      <% else %>
+        <div style='color:red;'>
+          <%= error_message_on :variabile_rapporto_item, :valore_numero, :prepend_text => 'Errore: ' %>
+        </div>
+        <%= text_field_tag :valore, variabile_rapporto_item.valore_numero,
+                  :maxlength => 20,
+                  :size => 8,
+                  :value => number_with_precision(variabile_rapporto_item.valore_numero, :precision => variabile_rapporto_item.variabile.decimali) %>
+      <% end %>
+    <%= submit_tag 'Salva' %>
+  <% end %>
+<% end %>
+

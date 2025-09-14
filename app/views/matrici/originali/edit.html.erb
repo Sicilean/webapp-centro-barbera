@@ -1,0 +1,20 @@
+<h1>Editing matrice</h1>
+
+<% form_for(@matrice) do |f| %>
+  <%= f.error_messages %>
+
+  <p>
+    <%= f.label :nome %><br />
+    <%= f.text_field :nome %>
+  </p>
+  <p>
+    <%= f.label :nome_esteso %><br />
+    <%= f.text_field :nome_esteso %>
+  </p>
+  <p>
+    <%= f.submit 'Update' %>
+  </p>
+<% end %>
+
+<%= link_to 'Show', @matrice %> |
+<%= link_to 'Back', matrici_path %>

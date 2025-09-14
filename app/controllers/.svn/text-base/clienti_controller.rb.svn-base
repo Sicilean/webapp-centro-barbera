@@ -1,0 +1,136 @@
+class ClientiController < ApplicationController
+  layout 'admin'
+  before_filter :require_admin_or_operator
+
+  active_scaffold :cliente do |config|
+    # attenzione che per l'edit devo editare il current_cliente (@cliente = current_cliente)
+    # stesso discorso per l'update
+    columns[:email_per_notifiche].description = "Più indirizzi email devono essere separati da una virgola"
+    columns[:fatt_indirizzo].description = "Compilare i seguenti campi solo se diversi dall'indirizzo principale"
+
+    columns = [
+                :codice,
+                :nome,
+                :campioni,
+                :rapporti_per_anno,
+                :fatture,
+                # la seguente rallenta troppo
+                #:fatture_per_anno,
+                :denominazione,
+                :partita_iva,
+                :codice_fiscale,
+                :indirizzo,
+                :comune,
+                :cap,
+                :provincia,
+                :tel,
+                :fax,
+                :email_per_notifiche,
+                :note,
+                :cellulare_per_sms,
+                :titolare_cellulare,
+                :cellulare_per_sms_2,
+                :titolare_cellulare_2,
+                :fatt_indirizzo,
+                :fatt_comune,
+                :fatt_cap,
+                :fatt_provincia,
+               ]
+    config.columns = 	columns
+    config.list.columns = columns - [:indirizzo, :denominazione, :partita_iva, :codice_fiscale, :provincia, :cap, :note, :fax,  :cellulare_per_sms, :titolare_cellulare, :cellulare_per_sms_2, :titolare_cellulare_2, :fatt_indirizzo, :fatt_comune, :fatt_cap, :fatt_provincia]
+    config.create.columns.exclude :campioni, :rapporti_per_anno, :fatture, :fatture_per_anno
+    config.update.columns.exclude :campioni, :rapporti_per_anno, :fatture, :fatture_per_anno
+    #config.columns[:campioni].form_ui = :select
+    list.per_page = 50
+    config.columns[:fatt_indirizzo].label = '[fattura] Indirizzo'
+    config.columns[:fatt_comune].label = '[fattura] Comune'
+    config.columns[:fatt_cap].label = '[fattura] Cap'
+    config.columns[:fatt_provincia].label = '[fattura] Provincia'
+    list.sorting = {:nome => :asc}
+    config.actions.swap :search, :live_search
+  end
+
+#  # GET /clienti
+#  # GET /clienti.xml
+#  def index
+#    @clienti = Cliente.all
+#
+#    respond_to do |format|
+#      format.html # index.html.erb
+#      format.xml  { render :xml => @clienti }
+#    end
+#  end
+#
+#  # GET /clienti/1
+#  # GET /clienti/1.xml
+#  def show
+#    @cliente = Cliente.find(params[:id])
+#
+#    respond_to do |format|
+#      format.html # show.html.erb
+#      format.xml  { render :xml => @cliente }
+#    end
+#  end
+#
+#  # GET /clienti/new
+#  # GET /clienti/new.xml
+#  def new
+#    @cliente = Cliente.new
+#
+#    respond_to do |format|
+#      format.html # new.html.erb
+#      format.xml  { render :xml => @cliente }
+#    end
+#  end
+#
+#  # GET /clienti/1/edit
+#  def edit
+#    @cliente = Cliente.find(params[:id])
+#  end
+#
+#  # POST /clienti
+#  # POST /clienti.xml
+#  def create
+#    @cliente = Cliente.new(params[:cliente])
+#
+#    respond_to do |format|
+#      if @cliente.save
+#        flash[:notice] = 'Cliente was successfully created.'
+#        format.html { redirect_to(@cliente) }
+#        format.xml  { render :xml => @cliente, :status => :created, :location => @cliente }
+#      else
+#        format.html { render :action => "new" }
+#        format.xml  { render :xml => @cliente.errors, :status => :unprocessable_entity }
+#      end
+#    end
+#  end
+#
+#  # PUT /clienti/1
+#  # PUT /clienti/1.xml
+#  def update
+#    @cliente = Cliente.find(params[:id])
+#
+#    respond_to do |format|
+#      if @cliente.update_attributes(params[:cliente])
+#        flash[:notice] = 'Cliente was successfully updated.'
+#        format.html { redirect_to(@cliente) }
+#        format.xml  { head :ok }
+#      else
+#        format.html { render :action => "edit" }
+#        format.xml  { render :xml => @cliente.errors, :status => :unprocessable_entity }
+#      end
+#    end
+#  end
+#
+#  # DELETE /clienti/1
+#  # DELETE /clienti/1.xml
+#  def destroy
+#    @cliente = Cliente.find(params[:id])
+#    @cliente.destroy
+#
+#    respond_to do |format|
+#      format.html { redirect_to(clienti_url) }
+#      format.xml  { head :ok }
+#    end
+#  end
+end
