@@ -1,0 +1,210 @@
+# Documentazione del Controller Application
+# =====================================
+#
+# Il controller Application è il controller base da cui ereditano tutti gli altri controller
+# dell'applicazione. Definisce metodi e filtri comuni utilizzati in tutta l'applicazione,
+# tra cui:
+# - Gestione dell'autenticazione e dell'autorizzazione
+# - Configurazione di ActiveScaffold
+# - Metodi di utilità per la gestione degli utenti
+# - Gestione degli errori e logging
+# - Metodi di supporto per la duplicazione dei rapporti
+
+# Filters added to this controller apply to all controllers in the application.
+# Likewise, all the methods added will be available for all controllers.
+
+class ApplicationController < ActionController::Base
+
+  # NB: per eseguire script è possibile disabilitare temporaneamente l'autenticazione:
+  # 1. Commentando la riga "filter_parameter_logging" qui sotto
+  # 2. Commentando "before_filter :require_admin_or_operator" in admin_controller
+  # 3. Aggiungendo "@current_user = User.find(1)" nel metodo current_user
+
+  # Filtra i parametri sensibili dai log
+  filter_parameter_logging :password, :password_confirmation
+ 
+  # MAI attivare questo, altrimenti Active Scaffold causa problemi con gli helper
+  # helper :all
+
+  # Protezione CSRF disabilitata (verificare se necessaria)
+  # protect_from_forgery
+
+  # Configurazione di base per ActiveScaffold utilizzata in tutti i controller
+  ActiveScaffold.set_defaults do |config|
+    # Ignora le colonne di timestamp automatiche
+    config.ignore_columns.add [:created_at, :updated_at]
+    # Imposta il numero di record per pagina a 1000
+    config.list.per_page = 1000
+    # La funzionalità live_search va configurata nei singoli controller
+  end
+
+  # Rende il metodo current_user disponibile nelle viste
+  helper_method :current_user
+
+  private
+
+    # Restituisce la sessione utente corrente o la crea se non esiste
+    def current_user_session
+      return @current_user_session if defined?(@current_user_session)
+      @current_user_session = UserSession.find
+    end
+
+    # Restituisce l'utente correntemente autenticato
+    # NOTA: In questa implementazione è impostato per accedere automaticamente
+    # come amministratore predefinito
+    def current_user
+      return @current_user if defined?(@current_user)
+      @current_user = User.find_by_email('info@centrobarbera.it')
+      return @current_user
+    end
+
+    # Filtro che verifica che ci sia un utente autenticato
+    # Se l'utente non è autenticato, reindirizza alla pagina di login
+    def require_user
+      unless current_user
+        store_location
+        flash[:notice] = "Devi entrare per eseguire questa operazione"
+        redirect_to login_url
+        return false
+      end
+    end
+
+    # Filtro che verifica che NON ci sia un utente autenticato
+    # Utilizzato per pagine accessibili solo da utenti non autenticati
+    def require_no_user
+      if current_user
+        store_location
+        flash[:notice] = "Devi essere uscito per eseguire questa operazione"
+        redirect_to logout_url
+        return false
+      end
+    end
+
+    # Salva l'URL corrente nella sessione
+    # Utile per reindirizzare l'utente alla pagina richiesta dopo l'autenticazione
+    def store_location
+      session[:return_to] = request.request_uri
+    end
+
+    # Reindirizza l'utente alla posizione precedentemente salvata o a un URL predefinito
+    def redirect_back_or_default(default)
+      redirect_to(session[:return_to] || default)
+      session[:return_to] = nil
+    end
+
+    # Filtro che verifica che l'utente corrente sia un amministratore o un operatore
+    # Protegge le risorse riservate al personale interno
+    def require_admin_or_operator
+      unless (current_user && current_user.is_admin_or_operator?)
+        store_location
+        flash[:notice] = "Ruolo insufficiente"
+        redirect_to login_url
+        return false
+      end
+    end
+
+    # Filtro che verifica che l'utente corrente sia un amministratore
+    # Protegge le risorse riservate agli amministratori
+    def require_admin
+      unless (current_user && current_user.is_admin?)
+        store_location
+        flash[:notice] = "Ruolo insufficiente"
+        redirect_to login_url
+        return false
+      end
+    end
+
+    # Gestione degli errori con notifica via email
+    # Invia un'email di notifica quando si verifica un errore nell'applicazione
+    def log_error(exception)
+      super
+      Notification.deliver_error_message(exception,
+        clean_backtrace(exception),
+        session.instance_variable_get("@data"),
+        params,
+        request.env
+      )
+    end
+  end
+
+  # Metodo per la creazione di un duplicato di un rapporto su un campione esistente o nuovo
+  # 
+  # @param rapporto_originale_id [Integer] ID del rapporto da duplicare
+  # @param campione_al_quale_assegnarlo_id [Integer] ID del campione su cui creare il nuovo rapporto
+  #        (se nil, viene utilizzato lo stesso campione del rapporto originale)
+  # @return [Rapporto] Il nuovo rapporto creato, o nil in caso di errore
+  def crea_e_restituisci_duplicato_del_rapporto_su_campione(rapporto_originale_id, campione_al_quale_assegnarlo_id = nil)
+    rapporto_originale = Rapporto.find(rapporto_originale_id)
+    
+    if rapporto_originale.nil?
+      flash[:error] = 'Errore: stai tentando di duplicare un rapporto inesistente'
+      return nil
+    else
+      # Se manca il campione, lo assegno allo stesso campione del rapporto originale
+      campione_al_quale_assegnarlo_id = rapporto_originale.campione.id if campione_al_quale_assegnarlo_id.nil?
+      
+      # Creiamo un nuovo rapporto con i dati dell'originale
+      # Non usiamo clone per evitare di copiare valori non controllati
+      rapporto_nuovo = Rapporto.new(
+        :campione_id => campione_al_quale_assegnarlo_id,
+        :tipologia_id => rapporto_originale.tipologia.id,
+        :data_esecuzione_prove_inizio => rapporto_originale.data_esecuzione_prove_inizio,
+        :data_esecuzione_prove_fine => rapporto_originale.data_esecuzione_prove_fine,
+        :data_richiesta => Time.now
+      )
+      
+      # Salvataggio iniziale del rapporto
+      if rapporto_nuovo.save
+        # Copia delle prove aggiuntive dal rapporto originale
+        rapporto_originale.prova_rapporto_items.each do |prova_rapporto_item|
+          prova_rapporto_item_nuovo = ProvaRapportoItem.new(
+            :rapporto_id => rapporto_nuovo.id,
+            :prova_id => prova_rapporto_item.prova_id,
+            :position => prova_rapporto_item.position
+          )
+          
+          unless prova_rapporto_item_nuovo.save
+            flash[:error] = 'Errore: non riesco a salvare le prove aggiuntive. Avvertire Francesco'
+          end
+        end
+        
+        # Ricarichiamo il rapporto per ottenere gli aggiornamenti
+        rapporto_nuovo.reload
+        
+        # Le variabili sono state sincronizzate automaticamente con valori vuoti
+        # Le cancelliamo e le ricreamo con i valori dell'originale
+        rapporto_nuovo.variabile_rapporto_items.each do |variabile_rapporto_item|
+          variabile_rapporto_item.destroy
+        end
+        
+        # Copia delle variabili dal rapporto originale
+        rapporto_originale.variabile_rapporto_items.each do |variabile_rapporto_item|
+          variabile_rapporto_item_nuovo = VariabileRapportoItem.new(
+            :rapporto_id => rapporto_nuovo.id,
+            :variabile_id => variabile_rapporto_item.variabile_id,
+            :valore_numero => variabile_rapporto_item.valore_numero,
+            :valore_testo => variabile_rapporto_item.valore_testo,
+            :errore => variabile_rapporto_item.errore,
+            :incertezza_di_misura => variabile_rapporto_item.incertezza_di_misura,
+            :valore_numero_forzato => variabile_rapporto_item.valore_numero_forzato
+          )
+          
+          unless variabile_rapporto_item_nuovo.save
+            flash[:error] = 'Errore: non riesco a salvare le variabili. Avvertire Francesco'
+          end
+        end
+        
+        # Salvataggio finale del rapporto per aggiornare prezzi e variabili
+        if rapporto_nuovo.save
+          return rapporto_nuovo
+        else
+          flash[:error] = 'Errore: su ultimo salvataggio rapporto clonato. Avvertire Francesco'
+          return nil
+        end
+      else
+        flash[:error] = 'Errore: non riesco a salvare il rapporto clonato. Avvertire Francesco'
+        return nil
+      end
+    end
+  end
+end 

@@ -54,9 +54,17 @@ class ApplicationController < ActionController::Base
     end
 
     def current_user
-      # Accesso automatico come amministratore
+      # Return the actual user session if it exists
+      return @current_user_session.user if defined?(@current_user_session) && @current_user_session
+      
+      # Otherwise, get the current user from the session
       return @current_user if defined?(@current_user)
-      @current_user = User.find_by_email('francesco@buenaventura.it')
+      
+      # If no user is logged in, use the user session
+      @current_user_session = UserSession.find
+      @current_user = @current_user_session.user if @current_user_session
+      
+      # If still no user, don't auto-login - let the authentication system handle it
       return @current_user
     end
 

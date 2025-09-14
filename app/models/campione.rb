@@ -36,9 +36,11 @@ class Campione < ActiveRecord::Base
     else
       return "R.c. #{numero}/#{anno} - #{nome_cliente}"
     end
-
   end
 
+  def nome_completo
+    "#{to_label} - #{etichetta}"
+  end
 
   
 #  def etichetta=(testo)

@@ -20,19 +20,30 @@ RUN apt-get update && apt-get install -y --force-yes \
     libxrender1 \
     xfonts-base \
     xfonts-75dpi \
+    netcat \
+    wkhtmltopdf \
     && rm -rf /var/lib/apt/lists/*
 
-# Installa PrinceXML da un mirror alternativo
-RUN cd /tmp && \
-    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
-    wget --no-check-certificate https://web.archive.org/web/20160318164738/http://www.princexml.com/download/prince_9.0-5_debian8.0_amd64.deb && \
-    dpkg -i prince_9.0-5_debian8.0_amd64.deb || true && \
-    apt-get update && apt-get install -f -y --force-yes && \
-    rm -f prince_9.0-5_debian8.0_amd64.deb
+# Utilizza wkhtmltopdf come alternativa a PrinceXML (più facile da installare in Debian Jessie)
+RUN echo '#!/bin/bash' > /usr/local/bin/prince && \
+    echo 'if [ "$1" = "--version" ]; then' >> /usr/local/bin/prince && \
+    echo '  echo "Prince 14.2 (wkhtmltopdf wrapper)"' >> /usr/local/bin/prince && \
+    echo '  exit 0' >> /usr/local/bin/prince && \
+    echo 'fi' >> /usr/local/bin/prince && \
+    echo 'if [[ "$*" == *"--silent - -o -"* ]]; then' >> /usr/local/bin/prince && \
+    echo '  wkhtmltopdf - -' >> /usr/local/bin/prince && \
+    echo 'elif [[ "$*" =~ "--silent - -o '"'"'([^'"'"']+)'"'"'" ]]; then' >> /usr/local/bin/prince && \
+    echo '  output_file=${BASH_REMATCH[1]}' >> /usr/local/bin/prince && \
+    echo '  wkhtmltopdf - "$output_file"' >> /usr/local/bin/prince && \
+    echo 'else' >> /usr/local/bin/prince && \
+    echo '  wkhtmltopdf "$@"' >> /usr/local/bin/prince && \
+    echo 'fi' >> /usr/local/bin/prince && \
+    chmod +x /usr/local/bin/prince && \
+    prince --version
 
 # Scarica e installa Ruby 1.8.7
 RUN cd /tmp && \
-    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
+    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cat /etc/resolv.conf.new > /etc/resolv.conf || true) && \
     wget --no-check-certificate https://cache.ruby-lang.org/pub/ruby/1.8/ruby-1.8.7-p374.tar.gz && \
     tar xzf ruby-1.8.7-p374.tar.gz && \
     cd ruby-1.8.7-p374 && \
@@ -44,7 +55,7 @@ RUN cd /tmp && \
 
 # Scarica e installa una versione specifica di RubyGems
 RUN cd /tmp && \
-    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
+    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cat /etc/resolv.conf.new > /etc/resolv.conf || true) && \
     wget --no-check-certificate https://github.com/rubygems/rubygems/archive/v1.3.7.tar.gz -O rubygems-1.3.7.tgz && \
     tar xzf rubygems-1.3.7.tgz && \
     cd rubygems-1.3.7 && \
@@ -64,7 +75,7 @@ RUN mkdir -p ~/.gem && \
 WORKDIR /gems
 RUN mkdir -p /gems && \
     cd /gems && \
-    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cp /etc/resolv.conf.new /etc/resolv.conf || true) && \
+    (echo "nameserver 8.8.8.8" > /etc/resolv.conf.new && cat /etc/resolv.conf.new > /etc/resolv.conf || true) && \
     wget --no-check-certificate https://rubygems.org/downloads/rake-0.8.7.gem && \
     wget --no-check-certificate https://rubygems.org/downloads/rack-1.1.0.gem && \
     wget --no-check-certificate https://rubygems.org/downloads/activesupport-2.3.8.gem && \
@@ -93,16 +104,12 @@ RUN cd /gems && \
 # Imposta la directory di lavoro per l'applicazione
 WORKDIR /app
 
-# Copia l'applicazione
-COPY . .
+# Copia l'entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Crea un Gemfile minimo
-RUN echo 'source "file:///gems"' > Gemfile && \
-    echo 'gem "rake", "0.8.7"' >> Gemfile && \
-    echo 'gem "rack", "1.1.0"' >> Gemfile && \
-    echo 'gem "rails", "2.3.8"' >> Gemfile && \
-    echo 'gem "mysql", "2.8.1"' >> Gemfile && \
-    echo 'gem "authlogic", "2.1.6"' >> Gemfile
+# Crea directory per i PDF
+RUN mkdir -p /app/pdf && chmod 777 /app/pdf
 
 # Configura Bundler
 ENV BUNDLE_PATH=/gems \
@@ -111,10 +118,13 @@ ENV BUNDLE_PATH=/gems \
     BUNDLE_LOCAL=true
 
 # Script per importare il database
-COPY barbera_development_may_30_2010.sql /docker-entrypoint-initdb.d/
+COPY barbera_development_complete.sql /docker-entrypoint-initdb.d/
 
 # Espone la porta 3000
 EXPOSE 3000
+
+# Imposta l'entrypoint
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Comando per avviare l'applicazione
 CMD ["script/server", "-b", "0.0.0.0"] 

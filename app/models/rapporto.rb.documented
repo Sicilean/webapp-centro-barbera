@@ -1,0 +1,330 @@
+# Modello Rapporto
+# Rappresenta un rapporto di prova (RdP) generato per un campione
+# Gestisce i risultati delle analisi, lo stato di completamento, la generazione di PDF e la fatturazione
+class Rapporto < ActiveRecord::Base
+  # Relazioni
+  # Un rapporto appartiene a una tipologia (tipo di analisi) e a un campione
+  # Può appartenere anche a una fattura quando viene fatturato
+  belongs_to :tipologia
+  belongs_to :campione
+  belongs_to :fattura
+
+  # Prove aggiuntive (oltre a quelle della tipologia)
+  # Ordinate per position per permettere una visualizzazione coerente nel rapporto
+  has_many :prova_rapporto_items, :dependent => :destroy, :order => 'position ASC'
+  has_many :prove, :through => :prova_rapporto_items
+
+  # Prove automatiche (quelle che vengono dalla tipologia)
+  has_many :auto_prova_rapporto_items, :dependent => :destroy, :order => 'id ASC'
+
+  # Variabili associate al rapporto (rappresentano i risultati delle analisi)
+  has_many :variabile_rapporto_items, :dependent => :destroy
+  has_many :variabili, :through => :variabile_rapporto_items
+
+  # Verifica se il rapporto può essere eliminato (non deve essere fatturato)
+  before_destroy :cancella_pure_dato_che_non_ha_fattura
+
+  # Dopo l'eliminazione di un rapporto, elimina anche i relativi file PDF
+  def after_destroy
+    self.pdf_elimina_tutto_a_seguito_cancellazione_rapporto
+  end
+
+  # Validazioni
+  # Se è specificato il numero, deve essere specificato anche l'anno e viceversa
+  validates_presence_of :anno,
+                        :unless => Proc.new { |rapporto| rapporto.numero.nil? },
+                        :message => "Rdp deve essere presente visto che hai inserito il numero Rdp"
+  validates_presence_of :numero,
+                        :unless => Proc.new { |rapporto| rapporto.anno.nil? },
+                        :message => "Rdp deve essere selezionato visto che hai inserito l'anno Rdp"
+
+  # Il numero RdP deve essere unico per anno e numero supplemento
+  validates_uniqueness_of :numero, 
+                          :allow_nil => true,
+                          :scope => [:anno, :numero_supplemento],
+                          :message => "è già in uso per l'anno selezionato"
+
+  # Il numero RdP deve essere un intero
+  validates_numericality_of :numero,
+                            :only_integer => true,
+                            :allow_nil => true
+  
+  # Il numero RdP deve essere compreso tra 1 e 10000
+  validates_inclusion_of  :numero,
+                          :in => 1..10000,
+                          :allow_nil => true,
+                          :message => 'deve essere compreso tra 1 e 9999 (o assente)'
+
+  # Data richiesta, tipologia e campione sono obbligatori
+  validates_presence_of :data_richiesta
+  validates_presence_of :tipologia_id, :campione_id
+  
+  # Imposta lo stato predefinito del rapporto a "in lavorazione" alla creazione
+  def before_create
+    self.status = RAPPORTO_STATUS_DEFAULT
+  end
+
+  # Prima del salvataggio, aggiorna il prezzo della tipologia se necessario
+  def before_save
+    # Aggiorna il prezzo della tipologia solo se è a forfeit e il prezzo attuale è zero
+    if self.prezzo_tipologia_forfeit == 0 && self.tipologia.forfeit
+      if self.id.nil?
+        # Il record ancora non esiste (siamo in NEW)
+        tipologia = Tipologia.find_by_id(self.tipologia.id)
+        unless tipologia.nil?
+          self.prezzo_tipologia_forfeit = Tipologia.find_by_id(self.tipologia.id).prezzo
+        end
+      else
+        self.prezzo_tipologia_forfeit = self.tipologia.prezzo
+      end
+    end
+  end
+
+  # Dopo il salvataggio, sincronizza le variabili e i prezzi delle prove non aggiuntive
+  def after_save
+    # Sincronizza le variabili in base alle prove associate
+    self.sincronizza_variabile_rapporto_items
+    
+    # Sincronizza i prezzi delle prove non aggiuntive
+    self.sincronizza_auto_prova_rapporto_items
+  end
+
+  # Verifica se il rapporto è stato fatturato
+  def fatturato?
+    if self.fattura
+      return true
+    else
+      return false
+    end
+  end
+
+  # Verifica se è possibile eliminare il rapporto (non deve essere fatturato)
+  def cancella_pure_dato_che_non_ha_fattura
+    if self.fatturato?
+      raise "Non posso cancellare, devi prima cancellare la relativa fattura"
+      return false
+    else
+      return true
+    end
+  end
+
+  # Aggiorna lo stato del rapporto in base alle prove associate
+  def set_proper_status
+    # Se il rapporto è completo ma non ha prove, torna a "in lavorazione"
+    if self.status == 'completo' && self.prove_totali.size == 0
+        self.status = RAPPORTO_STATUS_DEFAULT
+    end
+  end
+
+  # Gestione del prezzo forfettario della tipologia
+  # Converte il prezzo da euro a centesimi (per il salvataggio nel DB)
+  def prezzo_tipologia_forfeit=(euro)
+    write_attribute(:prezzo_tipologia_forfeit, euro.to_f * 100) # we store cents in the database
+  end
+  
+  # Converte il prezzo da centesimi a euro (per la visualizzazione)
+  def prezzo_tipologia_forfeit
+    read_attribute(:prezzo_tipologia_forfeit) / 100
+  end
+
+  # Restituisce una rappresentazione testuale del rapporto
+  def to_label
+    "#{'Rdp '+self.numero.to_s unless self.numero.blank?}-#{self.tipologia.nome unless self.tipologia.nil?}"
+  end
+
+  # Restituisce un'etichetta con data e prezzo per uso nelle fatture
+  def label_per_fattura
+    "#{self.to_label} #{self.data_stampa.strftime("%d-%m-%y") unless self.data_stampa.nil?} €#{self.prezzo_totale}"
+  end
+
+  # Restituisce il cliente associato al campione
+  def cliente
+    self.campione.cliente
+  end
+
+  # Restituisce le variabili rapporto che non hanno ancora valori inseriti
+  def variabile_rapporto_items_mancanti
+    self.variabile_rapporto_items.map{|variabile_rapporto_item| variabile_rapporto_item if variabile_rapporto_item.manca?}.compact
+  end
+
+  # Verifica se tutte le variabili hanno valori inseriti
+  def variabili_tutte_inserite?
+   self.variabile_rapporto_items_mancanti.empty?
+  end
+
+  # Verifica se il rapporto è nello stato "completo"
+  def completo?
+    self.status == 'completo'
+  end
+ 
+  # Verifica se il rapporto è pronto per essere stampato o fatturato
+  # Un rapporto è pronto se è completo, ha un numero e tutti i dati sono inseriti
+  def rdp_pronto?
+    (self.status == 'completo') && !self.numero.blank? && self.variabili_tutte_inserite?
+  end
+
+  # Aggiorna la data di stampa se mancante, impostandola all'ora corrente
+  def aggiorna_data_di_stampa_se_mancante
+    self.update_attribute(:data_stampa, Time.now) if self.data_stampa.nil?
+  end
+
+  # Restituisce tutte le prove associate al rapporto
+  # Include le prove della tipologia e le prove aggiuntive specifiche del rapporto
+  def prove_totali
+    # Attenzione all'ordine: prima le prove della tipologia, poi le altre
+    return self.tipologia.prove + self.prove
+  end
+
+  # Restituisce le prove ordinate per position
+  def prove_ordinate
+    # Implementazione non mostrata qui
+  end
+
+  # Restituisce tutte le prove associate al rapporto, ordinate per position
+  def prove_totali_ordinate
+    return self.tipologia.prove_ordinate + self.prove_ordinate
+  end
+
+  # Sincronizza le variabili del rapporto in base alle prove associate
+  # Crea automaticamente variabile_rapporto_items per tutte le variabili delle prove
+  def sincronizza_variabile_rapporto_items
+    # Ricava la lista delle variabili da aggiungere
+    variabili_da_aggiungere = self.prove_totali.map {|prova| prova.variabili}.flatten.uniq
+    
+    # Implementazione non mostrata qui
+  end
+
+  # Sincronizza le prove automatiche del rapporto con i relativi prezzi
+  def sincronizza_auto_prova_rapporto_items
+    # Crea auto_prova_rapporto_items per le prove della tipologia
+    if !self.tipologia.prove.empty? && self.auto_prova_rapporto_items.empty?
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Esegue i calcoli per le variabili di tipo "funzione"
+  def calcola
+    self.variabile_rapporto_items.each {|variabile_rapporto_item| variabile_rapporto_item.calcola if variabile_rapporto_item.variabile.tipo == 'funzione'}
+    # Implementazione non mostrata qui
+  end
+
+  # Validazione personalizzata per le date di esecuzione delle prove
+  def validate
+    if !self.data_esecuzione_prove_fine.nil? and self.data_esecuzione_prove_fine < self.data_esecuzione_prove_inizio
+      # Implementazione non mostrata qui
+    end
+    
+    # Impedisce la modifica di rapporti già fatturati
+    errors.add "Errore:", "Rapporto non modificabile in quanto risultà già fatturato" if self.fatturato?
+  end
+
+  # Aggiorna lo stato del rapporto in base al completamento dei dati
+  def update_status
+    # Se il rapporto è in lavorazione, controlla se è stato completato
+    if self.status != 'completo'
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Invia un SMS per il rapporto e restituisce eventuali errori
+  def invia_sms_per_rapporto_e_restituisce_errori(message, recipient, sender)
+    status_errori = invia_sms_e_restituisce_errori(message, recipient, sender)
+    # Implementazione non mostrata qui
+  end
+
+  # Verifica se il PDF del rapporto esiste
+  def pdf_esiste?
+    if self.anno.blank? || self.numero.blank?
+      return false
+    else
+      File.exist?(self.nome_file_pdf_del_rapporto_con_path_assoluto)
+    end
+  end
+
+  # Verifica se esiste un backup del PDF del rapporto
+  def pdf_backup_esiste?
+    File.exist?(self.nome_file_pdf_del_rapporto_di_backup_con_path_assoluto)
+  end
+
+  # Elimina il PDF del rapporto se esiste
+  def pdf_elimina
+    if !self.anno.blank? && !self.numero.blank?
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Elimina tutti i file PDF relativi al rapporto dopo la cancellazione
+  def pdf_elimina_tutto_a_seguito_cancellazione_rapporto
+    unless self.numero.blank?
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Restituisce il nome del file PDF del rapporto
+  def nome_file_pdf_del_rapporto
+    return "Rdp_#{self.anno}_#{self.numero}#{('_s_'+self.numero_supplemento.to_s) unless self.numero_supplemento.blank?}.pdf"
+  end
+
+  # Restituisce il percorso completo del file PDF del rapporto
+  def nome_file_pdf_del_rapporto_con_path_assoluto
+    File.join(DIRECTORY_ASSOLUTA_PDF_RAPPORTI, self.nome_file_pdf_del_rapporto)
+  end
+
+  # Restituisce il percorso completo del backup del file PDF del rapporto
+  def nome_file_pdf_del_rapporto_di_backup_con_path_assoluto
+    File.join(DIRECTORY_ASSOLUTA_PDF_RAPPORTI,File.basename(self.nome_file_pdf_del_rapporto_con_path_assoluto, '.pdf')+'.bak.pdf')
+  end
+
+  # Calcola il prezzo della tipologia se è a forfeit
+  def prezzo_tipologia_automatico
+    if self.tipologia.forfeit
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Calcola il prezzo delle prove automatiche
+  def prezzo_auto_prove
+    if self.tipologia.forfeit
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Calcola il prezzo di listino delle prove automatiche
+  def prezzo_auto_prove_di_listino
+    if self.tipologia.forfeit
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Calcola il prezzo delle prove aggiuntive
+  def prezzo_prove_aggiuntive
+    prezzo_tot = 0
+    # Implementazione non mostrata qui
+    return prezzo_tot
+  end
+
+  # Calcola il prezzo di listino delle prove aggiuntive
+  def prezzo_prove_aggiuntive_di_listino
+    prezzo_tot = 0
+    # Implementazione non mostrata qui
+    return prezzo_tot
+  end
+
+  # Calcola il prezzo totale del rapporto
+  # Somma il prezzo delle prove automatiche e delle prove aggiuntive
+  def prezzo_totale
+    return self.prezzo_auto_prove + self.prezzo_prove_aggiuntive
+  end
+
+  # Calcola il prezzo totale di listino del rapporto
+  def prezzo_totale_di_listino
+    return self.prezzo_auto_prove_di_listino + self.prezzo_prove_aggiuntive_di_listino
+  end
+
+  # Aggiorna il prezzo al listino attuale e restituisce true se ci sono state modifiche
+  def attualizza_prezzo
+    if self.fattura || (self.prezzo_totale == self.prezzo_totale_di_listino)
+      # Implementazione non mostrata qui
+    end
+  end
+end 

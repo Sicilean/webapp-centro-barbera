@@ -1,0 +1,476 @@
+# Documentazione del Controller Rapporti
+# =====================================
+#
+# Il controller Rapporti gestisce tutte le operazioni relative ai rapporti di prova (RdP),
+# che rappresentano il documento principale generato dal sistema per certificare i risultati
+# delle analisi effettuate sui campioni.
+#
+# Il controller permette di:
+# - Creare, visualizzare, modificare ed eliminare rapporti
+# - Generare PDF dei rapporti
+# - Gestire lo stato dei rapporti (in lavorazione, completo)
+# - Inviare rapporti via email e SMS ai clienti
+# - Duplicare rapporti esistenti
+# - Visualizzare i dati delle analisi in varie forme
+
+class RapportiController < ApplicationController
+
+  # Utilizza il layout 'admin' per tutte le viste
+  layout 'admin'
+  
+  # Richiede che l'utente sia amministratore o operatore per accedere a qualsiasi azione
+  before_filter :require_admin_or_operator
+
+  # Configurazione di ActiveScaffold per la gestione dei rapporti
+  active_scaffold :rapporto do |config|
+    # Descrizioni dei campi mostrate come tooltip nell'interfaccia
+    columns[:data_scadenza].description = "lascia in bianco per rapporti senza una scadenza specifica"
+    columns[:data_esecuzione_prove_fine].description = "lascia in bianco per prove eseguite in un unico giorno"
+    columns[:note].description = "note interne (non visibili ai clienti)"
+    columns[:pie_pagina].description = "il testo che verrà stampato nelle note sul rapporto di prova (HTML ammesso): <br/> a capo"
+    
+    # Configurazione dell'ordinamento quando si clicca sulla colonna numero RdP
+    columns[:numero].sort_by :sql => 'anno ASC, numero'
+    
+    # Definizione delle colonne da visualizzare nell'interfaccia
+    columns = [
+                :dati_rapporto_link,      # Link alla pagina dei dati del rapporto
+                :stampa_dati_link,        # Link all'anteprima dei dati
+                :stampa_rapporto_link,    # Link alla stampa del rapporto
+                :duplica_rapporto_link,   # Link per duplicare il rapporto
+                :fattura_link,            # Link alla fattura associata
+                :status,                  # Stato del rapporto (in lavorazione, completo)
+                :tipologia,               # Tipologia di analisi
+                :campione,                # Campione analizzato
+                :prova_rapporto_items,    # Prove aggiuntive associate al rapporto
+                :numero,                  # Numero del rapporto
+                :anno,                    # Anno del rapporto
+                :numero_supplemento,      # Numero del supplemento (per rapporti integrativi)
+                :data_richiesta,          # Data di richiesta del rapporto
+                :data_scadenza,           # Data di scadenza
+                :note,                    # Note interne
+                :prezzo_totale,           # Prezzo totale del rapporto
+                :data_invio_email,        # Data di invio email
+                :data_invio_sms,          # Data di invio SMS
+                :data_esecuzione_prove_inizio, # Data inizio esecuzione prove
+                :data_esecuzione_prove_fine,   # Data fine esecuzione prove
+                :data_stampa,             # Data di stampa
+                :pie_pagina,              # Testo del piè di pagina
+               ]
+    
+    config.columns = columns
+    
+    # Configurazione delle colonne da visualizzare nella lista (vista principale)
+    config.list.columns = columns - [:note] - [:data_esecuzione_prove_fine] - [:pie_pagina] - [:data_esecuzione_prove_inizio] - [:data_stampa]
+    
+    # Etichette personalizzate per le colonne
+    config.columns[:prova_rapporto_items].label = "Prove aggiuntive"
+    config.columns[:numero].label = 'Rdp n.'
+    config.columns[:anno].label = 'Rdp anno'
+    config.columns[:note].label = "Note interne"
+    config.columns[:pie_pagina].label = "Pié pagina"
+    config.columns[:duplica_rapporto_link].label = 'Dup'
+    config.columns[:dati_rapporto_link].label = 'Dati Rapporto'
+    config.columns[:stampa_dati_link].label = 'Anteprima'
+    config.columns[:stampa_rapporto_link].label = 'Rapporto'
+    config.columns[:fattura_link].label = 'Fattura'
+    config.columns[:data_esecuzione_prove_inizio].label = 'Data esec. prove dal:'
+    config.columns[:data_esecuzione_prove_fine].label = ' al:'
+    config.columns[:numero_supplemento].label = 'Suppl. n.'
+    
+    # Esclude colonne specifiche dalle viste di creazione, aggiornamento e sotto-form
+    config.create.columns.exclude :fattura_link, :status, :prezzo_totale, :data_invio_email, :data_invio_sms, :variabile_rapporto_items, :prova_rapporto_items
+    config.create.columns.exclude :variabile_rapporto_items, :prova_rapporto_items, :dati_rapporto_link, :stampa_rapporto_link, :stampa_dati_link, :duplica_rapporto_link
+    config.update.columns.exclude :fattura_link, :prezzo_totale, :variabile_rapporto_items, :status, :dati_rapporto_link, :stampa_rapporto_link, :stampa_dati_link, :duplica_rapporto_link
+    config.subform.columns.exclude :fattura_link, :prezzo_totale, :variabile_rapporto_items, :data_invio_email, :data_invio_sms, :status, :dati_rapporto_link, :stampa_rapporto_link, :stampa_dati_link, :duplica_rapporto_link
+    
+    # Configurazione dell'interfaccia UI per specifiche colonne
+    config.columns[:tipologia].form_ui = :select
+    config.columns[:campione].form_ui = :select
+    
+    # Configurazione dei link per la modalità nidificata
+    config.columns[:tipologia].set_link('nested', :parameters => nil)
+    config.columns[:prova_rapporto_items].set_link('nested', :parameters => nil)
+    
+    # Configurazione dell'ordinamento predefinito e paginazione
+    list.sorting = { :data_richiesta => :desc }
+    list.per_page = 50
+    
+    # Configurazione della ricerca
+    config.columns[:numero].search_sql = '`rapporti`.numero'
+    config.search.columns << :numero
+    
+    # Tema dell'interfaccia
+    config.theme = :blue
+  end
+
+  # Definisce le condizioni per la raccolta di rapporti visualizzati
+  # Permette di filtrare i rapporti per cliente e anno del campione
+  def conditions_for_collection
+    if params[:cliente_id]
+      cliente = Cliente.find_by_id(params[:cliente_id].to_i)
+      if cliente.nil?
+        flash[:error] = 'Attenzione, stai filtrando i rapporti su un cliente inesistente'
+        return false
+      else
+        if params[:campione_anno].nil?
+          flash[:notice] = "(filtrato) Elenco rapporti cliente: <strong>#{cliente.nome}</strong>"
+          campioni_da_mostrare = cliente.campioni.map {|campione| campione.id if !campione.rapporti.nil?}
+        else
+          flash[:notice] = "(filtrato) Elenco rapporti cliente: <strong>#{cliente.nome}</strong> per campioni con RC anno: <strong>#{params[:campione_anno]}</strong>"
+          campioni_da_mostrare = cliente.campioni.map {|campione| campione.id if (!campione.rapporti.nil? && campione.anno == params[:campione_anno].to_i)}
+        end
+        ['campione_id IN (?)', campioni_da_mostrare]
+      end
+    end
+  end
+
+  # Mostra i rapporti da completare (status in lavorazione)
+  def da_completare
+    # rapporti con status in lavorazione
+  end
+
+  # Mostra un'anteprima dei dati del rapporto
+  # Visualizza le variabili misurate e calcolate, ordinate in modo logico
+  def stampa_dati
+    @rapporto = Rapporto.find(params[:id])
+    @variabile_rapporto_items = @rapporto.variabile_rapporto_items.clone # clone necessario per evitare di modificare @rapporto
+    @variabile_rapporto_items_solo_funzioni = @variabile_rapporto_items.clone
+    
+    # Estrae solo le variabili di tipo funzione
+    @variabile_rapporto_items_solo_funzioni.delete_if { |variabile_rapporto_item| variabile_rapporto_item.variabile.tipo != 'funzione' }
+    
+    # Ordina le variabili in modo logico (prima le variabili indipendenti, poi quelle che le utilizzano)
+    @variabile_rapporto_items_ordinate = []
+    @variabile_rapporto_items.each do |variabile_rapporto_item|
+      @variabile_rapporto_items_ordinate << variabile_rapporto_item
+      variabile_rapporto_item.variabile.variabili_indipendenti.each do |variabile|
+        @variabile_rapporto_items.each {|variabile_rapporto_item| (@variabile_rapporto_items_ordinate << variabile_rapporto_item) if (variabile_rapporto_item.variabile.id == variabile.id) }
+      end
+    end
+
+    @prove_totali = @rapporto.prove_totali_ordinate.clone
+    render :layout => 'layout_vuoto'
+  end
+
+  # Mostra un riepilogo di tutti i rapporti non completi
+  # Utilizzato per visualizzare i rapporti che necessitano di attenzione
+  def stampa_dati_di_tutti_i_rapporti
+    @rapporti_non_pronti = Rapporto.find(:all,
+                                            # Esclude i rapporti completi e quelli precedenti al 2010 con numero <= 1034
+                                            :conditions =>  "(status = '#{RAPPORTO_STATUS_DEFAULT}' OR numero IS NULL) AND NOT (anno=2010 AND ((numero IS NOT NULL) AND numero<=1034))",
+                                            :order => 'data_scadenza, created_at DESC')
+    render :layout => 'layout_vuoto'
+  end
+
+  # Genera la vista per la stampa del rapporto di prova (RdP)
+  # Supporta sia la visualizzazione HTML che la generazione PDF
+  def rdp
+    # Supporta la stampa di un modello vuoto (per prestampati)
+    # Esempio: http://localhost:3000/rapporti/rdp/903?format=pdf&stampa_modello_vuoto=1
+    if params[:stampa_modello_vuoto]=='1'
+      @style_nascosto_se_stampa_modello_vuoto = ' visibility:hidden; '
+    else
+      @style_nascosto_se_stampa_modello_vuoto = ' visibility:visible; '
+    end
+    
+    @rapporto = Rapporto.find(params[:id])
+    @rapporto.aggiorna_data_di_stampa_se_mancante
+    @variabile_rapporto_items = @rapporto.variabile_rapporto_items.clone
+    @prove_totali = @rapporto.prove_totali_ordinate.clone
+    
+    # Genera il render solo se non chiamato da 'invia_email'
+    unless @codice_senza_render
+      # Visualizzazione rapporto con supporto per formato HTML e PDF
+      respond_to do |format|
+        format.html {render :layout => 'rdp'}
+        format.pdf do
+          render :pdf => "rdp", :stylesheets => ["rdp", "prince"], :layout => "rdp"
+        end
+      end
+    end
+  end
+
+  # Genera e salva un file PDF del rapporto
+  # Verifica che il rapporto sia completo prima di procedere
+  def crea_pdf
+    rapporto = Rapporto.find(params[:id])
+    
+    # Verifica che tutte le variabili siano state inserite
+    if !rapporto.variabili_tutte_inserite?
+      flash[:error] = 'Il rapporto non è completo, mancano dei dati.'
+      redirect_to :controller => :admin, :action => :dati_rapporto, :id => rapporto.id
+    # Verifica che il numero del rapporto sia stato assegnato
+    elsif rapporto.numero.nil?
+      flash[:error] = 'Numero Rdp mancante'
+      redirect_to :controller => :rapporti, :action => :edit, :id => rapporto.id
+    # Verifica che la data di esecuzione prove sia stata impostata
+    elsif rapporto.data_esecuzione_prove_inizio.nil?
+      flash[:error] = 'Data esecuzione prove mancante'
+      redirect_to :controller => :rapporti, :action => :edit, :id => rapporto.id
+    else
+      # Se il PDF esiste già, lo elimina (con backup automatico)
+      rapporto.pdf_elimina if rapporto.pdf_esiste?
+      
+      # Genera il PDF utilizzando l'azione rdp ma senza render
+      @codice_senza_render = true
+      rdp
+      rdp = make_pdf(:template => "rapporti/rdp.erb", :pdf => "rdp", :stylesheets => ["rdp", "prince"], :layout => "rdp")
+      out = rdp
+      
+      # Salva il file PDF nella posizione corretta
+      nome_file = rapporto.nome_file_pdf_del_rapporto_con_path_assoluto
+      File.open(nome_file, 'w') do |f|
+        f.write(out)
+      end
+      
+      redirect_to :controller => :admin, :action => :dati_rapporto, :id => rapporto.id
+    end
+  end
+
+  # Mostra un PDF esistente di un rapporto
+  # Se il file non esiste, reindirizza alla generazione
+  def mostra_pdf
+    rapporto = Rapporto.find(params[:id])
+    nome_file = rapporto.nome_file_pdf_del_rapporto_con_path_assoluto
+    
+    if File.exist?(nome_file)
+      file_data = IO.read(nome_file)
+      send_data(file_data, :filename => "rdp_#{rapporto.numero}_#{rapporto.anno}.pdf", :type => "application/pdf", :disposition => "inline")
+    else
+      flash[:notice] = "Il PDF non esiste ancora. Clicca sulla sigla RdP per generarlo."
+      redirect_to :action => :crea_pdf, :id => rapporto.id
+    end
+  end
+  
+  # Genera un'anteprima dei risultati di più rapporti
+  # Utilizzato per visualizzare i dati di più rapporti in una unica pagina
+  def anteprima_risultati
+    if params[:rapporty_array].nil?
+      # Parametri mancanti, reindirizza alla lista
+      flash[:error] = 'Nessun rapporto selezionato'
+      redirect_to :action => :list
+    else
+      # Carica i rapporti selezionati
+      @rapporti = []
+      params[:rapporty_array].each do |rapporto_id|
+        rapporto = Rapporto.find(rapporto_id.to_i)
+        @rapporti << rapporto unless rapporto.nil?
+      end
+      
+      # Verifica che tutti i rapporti siano dello stesso cliente
+      cliente_id = @rapporti.first.campione.cliente.id unless @rapporti.empty?
+      @rapporti.each do |rapporto|
+        if rapporto.campione.cliente.id != cliente_id
+          flash[:error] = 'I rapporti selezionati devono essere dello stesso cliente'
+          redirect_to :action => :list
+          return
+        end
+      end
+      
+      # Ordina i rapporti per data di richiesta
+      @rapporti.sort! { |a, b| a.data_richiesta <=> b.data_richiesta }
+      
+      render :layout => 'layout_vuoto'
+    end
+  end
+  
+  # Invia il rapporto via email al cliente
+  # Supporta l'invio sia di un singolo rapporto che di rapporti multipli
+  def invia_email
+    # Se params[:id] è presente, si tratta di un rapporto singolo
+    # Se params[:commit] è presente, si tratta di rapporti multipli
+    
+    if params[:id].nil?
+      # Invio multiplo
+      @rapporti = []
+      if params[:email_array]
+        params[:email_array].each do |rapporto_id|
+          rapporto = Rapporto.find(rapporto_id.to_i)
+          @rapporti << rapporto unless rapporto.nil?
+        end
+      end
+      
+      # Verifica che ci siano rapporti da inviare
+      if @rapporti.empty?
+        flash[:error] = 'Nessun rapporto selezionato per invio email'
+        redirect_to :action => :list
+        return
+      end
+      
+      # Verifica che tutti i rapporti siano dello stesso cliente
+      cliente_id = @rapporti.first.campione.cliente.id
+      @rapporti.each do |rapporto|
+        if rapporto.campione.cliente.id != cliente_id
+          flash[:error] = 'I rapporti selezionati devono essere dello stesso cliente per invio email'
+          redirect_to :action => :list
+          return
+        end
+      end
+      
+      # Prepara l'invio email con più allegati
+      @cliente = @rapporti.first.campione.cliente
+      @email = @cliente.email
+      @oggetto = "Invio rapporti di prova (id: #{@rapporti.map{|r| r.id}.join(',')})"
+      @corpo = "Gentile Cliente #{@cliente.nome_completo},\n\nin allegato i rapporti di prova richiesti.\n\nDistinti saluti"
+    else
+      # Invio singolo
+      @rapporto = Rapporto.find(params[:id])
+      @cliente = @rapporto.campione.cliente
+      @email = @cliente.email
+      @oggetto = "Invio rapporto di prova n. #{@rapporto.numero}/#{@rapporto.anno}"
+      @corpo = "Gentile Cliente #{@cliente.nome_completo},\n\nin allegato il rapporto di prova richiesto.\n\nDistinti saluti"
+    end
+    
+    # Gestisce l'invio effettivo dell'email
+    if params[:invia]
+      if params[:id].nil?
+        # Invio multiplo
+        @rapporti = []
+        params[:rapporto_ids].split(',').each do |rapporto_id|
+          rapporto = Rapporto.find(rapporto_id.to_i)
+          @rapporti << rapporto unless rapporto.nil?
+        end
+        
+        # Prepara gli allegati PDF per tutti i rapporti
+        allegati = []
+        @rapporti.each do |rapporto|
+          # Genera il PDF se non esiste
+          unless rapporto.pdf_esiste?
+            @rapporto = rapporto
+            @codice_senza_render = true
+            rdp
+            rdp_pdf = make_pdf(:template => "rapporti/rdp.erb", :pdf => "rdp", :stylesheets => ["rdp", "prince"], :layout => "rdp")
+            rapporto.pdf_salva(rdp_pdf)
+          end
+          
+          nome_file = rapporto.nome_file_pdf_del_rapporto_con_path_assoluto
+          allegati << nome_file
+        end
+        
+        # Invia l'email con gli allegati
+        if Notifier.deliver_rapporti_email(params[:email], params[:oggetto], params[:corpo], allegati)
+          # Aggiorna la data di invio email per tutti i rapporti
+          @rapporti.each do |rapporto|
+            rapporto.data_invio_email = Time.now
+            rapporto.save
+          end
+          
+          flash[:notice] = "Email inviata a #{params[:email]}"
+          redirect_to :action => :list
+        else
+          flash[:error] = "Errore nell'invio dell'email"
+          redirect_to :action => :list
+        end
+      else
+        # Invio singolo
+        @rapporto = Rapporto.find(params[:id])
+        
+        # Genera il PDF se non esiste
+        unless @rapporto.pdf_esiste?
+          @codice_senza_render = true
+          rdp
+          rdp_pdf = make_pdf(:template => "rapporti/rdp.erb", :pdf => "rdp", :stylesheets => ["rdp", "prince"], :layout => "rdp")
+          @rapporto.pdf_salva(rdp_pdf)
+        end
+        
+        # Invia l'email con allegato
+        if Notifier.deliver_rapporto_email(params[:email], params[:oggetto], params[:corpo], @rapporto.nome_file_pdf_del_rapporto_con_path_assoluto)
+          @rapporto.data_invio_email = Time.now
+          @rapporto.save
+          
+          flash[:notice] = "Email inviata a #{params[:email]}"
+          redirect_to :action => :show, :id => @rapporto.id
+        else
+          flash[:error] = "Errore nell'invio dell'email"
+          redirect_to :action => :show, :id => @rapporto.id
+        end
+      end
+    end
+  end
+  
+  # Invia un SMS di notifica al cliente
+  # Supporta l'invio sia per un singolo rapporto che per rapporti multipli
+  def invia_sms
+    if params[:id].nil?
+      # Invio multiplo
+      @rapporti = []
+      if params[:sms_array]
+        params[:sms_array].each do |rapporto_id|
+          rapporto = Rapporto.find(rapporto_id.to_i)
+          @rapporti << rapporto unless rapporto.nil?
+        end
+      end
+      
+      # Verifica che ci siano rapporti da notificare
+      if @rapporti.empty?
+        flash[:error] = 'Nessun rapporto selezionato per invio SMS'
+        redirect_to :action => :list
+        return
+      end
+      
+      # Verifica che tutti i rapporti siano dello stesso cliente
+      cliente_id = @rapporti.first.campione.cliente.id
+      @rapporti.each do |rapporto|
+        if rapporto.campione.cliente.id != cliente_id
+          flash[:error] = 'I rapporti selezionati devono essere dello stesso cliente per invio SMS'
+          redirect_to :action => :list
+          return
+        end
+      end
+      
+      # Prepara l'invio SMS
+      @cliente = @rapporti.first.campione.cliente
+      @cellulare = @cliente.cellulare
+      @testo = "Egregio cliente, sono disponibili i risultati delle analisi sui campioni #{@rapporti.map{|r| r.campione.progressivo_per_cliente}.join(',')}. Per riceverli via email contattare il laboratorio"
+    else
+      # Invio singolo
+      @rapporto = Rapporto.find(params[:id])
+      @cliente = @rapporto.campione.cliente
+      @cellulare = @cliente.cellulare
+      @testo = "Egregio cliente, sono disponibili i risultati delle analisi sul campione #{@rapporto.campione.progressivo_per_cliente}. Per riceverli via email contattare il laboratorio"
+    end
+    
+    # Gestisce l'invio effettivo dell'SMS
+    if params[:invia]
+      if params[:id].nil?
+        # Invio multiplo
+        @rapporti = []
+        params[:rapporto_ids].split(',').each do |rapporto_id|
+          rapporto = Rapporto.find(rapporto_id.to_i)
+          @rapporti << rapporto unless rapporto.nil?
+        end
+        
+        # Invia l'SMS
+        if Notifier.deliver_sms(params[:cellulare], params[:testo])
+          # Aggiorna la data di invio SMS per tutti i rapporti
+          @rapporti.each do |rapporto|
+            rapporto.data_invio_sms = Time.now
+            rapporto.save
+          end
+          
+          flash[:notice] = "SMS inviato a #{params[:cellulare]}"
+          redirect_to :action => :list
+        else
+          flash[:error] = "Errore nell'invio dell'SMS"
+          redirect_to :action => :list
+        end
+      else
+        # Invio singolo
+        @rapporto = Rapporto.find(params[:id])
+        
+        # Invia l'SMS
+        if Notifier.deliver_sms(params[:cellulare], params[:testo])
+          @rapporto.data_invio_sms = Time.now
+          @rapporto.save
+          
+          flash[:notice] = "SMS inviato a #{params[:cellulare]}"
+          redirect_to :action => :show, :id => @rapporto.id
+        else
+          flash[:error] = "Errore nell'invio dell'SMS"
+          redirect_to :action => :show, :id => @rapporto.id
+        end
+      end
+    end
+  end
+end 

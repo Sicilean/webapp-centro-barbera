@@ -1,0 +1,130 @@
+# Modello Prova
+# Rappresenta una singola analisi o test che può essere eseguito su un campione
+# Le prove possono essere associate a tipologie e includere variabili da misurare
+class Prova < ActiveRecord::Base
+
+  # Relazioni
+  # Una prova appartiene a una matrice (tipo di materiale su cui si esegue l'analisi)
+  belongs_to :matrice
+  
+  # Associazione con le variabili tramite prova_variabile_items
+  # Quando una prova viene eliminata, elimina anche le sue associazioni con le variabili
+  has_many :prova_variabile_items, :dependent => :destroy
+  has_many :variabili, :through => :prova_variabile_items
+  
+  # Associazione con le tipologie tramite prova_tipologia_items
+  # Una prova può essere inclusa in più tipologie di analisi
+  has_many :prova_tipologia_items, :dependent => :destroy
+  has_many :tipologie, :through => :prova_tipologia_items
+  
+  # Associazione con i rapporti tramite prova_rapporto_items (prove aggiuntive)
+  # Rappresenta le prove aggiunte manualmente a un rapporto (oltre a quelle della tipologia)
+  has_many :prova_rapporto_items, :dependent => :destroy
+  has_many :rapporti, :through => :prova_rapporto_items
+
+  # Associazione con auto_prova_rapporto_items (prove automatiche dalle tipologie)
+  # Usata per controllare se la prova è utilizzata in rapporti come parte di una tipologia
+  has_many :auto_prova_rapporto_items, :dependent => :destroy
+
+  # Verifica se la prova può essere eliminata (non deve essere utilizzata)
+  before_destroy :cancella_pure_dato_che_non_e_utilizzata
+  
+  # Logging dopo l'eliminazione di una prova
+  after_destroy { |record| logger.info("Prova '#{record.matrice.nome}-#{record.nome}' (id:#{record.id}) eliminata.") }
+
+  # Validazioni
+  # Matrice e nome sono obbligatori
+  validates_presence_of :matrice, :nome
+
+  # Il nome deve essere unico per ogni matrice (case insensitive)
+  validates_uniqueness_of :nome, :case_sensitive => false, :scope => :matrice_id
+  
+  # Il prezzo deve essere maggiore o uguale a zero e minore di 1000€ (memorizzato come centesimi)
+  validates_numericality_of :prezzo, :greater_than_or_equal_to => 0, :less_than => 10*100*100,
+                           :message => 'deve essere minore di 1000€'
+
+  # Gestione del prezzo della prova
+  # Converte il prezzo da euro a centesimi (per il salvataggio nel DB)
+  def prezzo=(euro)
+    write_attribute(:prezzo, euro.to_f * 100) # we store cents in the database
+  end
+  
+  # Converte il prezzo da centesimi a euro (per la visualizzazione)
+  def prezzo
+    read_attribute(:prezzo) / 100
+  end
+
+  # Restituisce una rappresentazione testuale della prova
+  # Formato: "[matrice]-[nome]" o solo "[nome]" se la matrice non è specificata
+  def to_label
+    if matrice.nil?
+      "#{nome}"
+    else
+      "#{matrice.nome}-#{nome}"
+    end
+  end
+
+  # Verifica se è possibile eliminare la prova
+  # Restituisce true se la prova può essere cancellata (non utilizzata)
+  # Restituisce false e aggiunge un errore se la prova è utilizzata
+  def cancella_pure_dato_che_non_e_utilizzata
+    if !self.utilizzata?
+      return true
+    else
+       # Aggiunge un messaggio di errore che verrà mostrato all'utente
+       add_to_base "La Prova non puo' essere cancellata in quanto utilizzata"
+       # Logging del tentativo fallito di cancellazione
+       logger.info("Tentativo di cancellazione della prova '#{matrice.nome}-#{nome}' (id:#{id}) andato a vuoto in quanto la prova è utilizzata.")
+      return false
+    end
+  end
+
+  # Verifica se almeno una delle tipologie che contiene questa prova è utilizzata
+  # Restituisce true se almeno una tipologia associata è utilizzata in rapporti
+  def almeno_una_tipologia_che_la_contiene_viene_utilizzata
+    almeno_una_tipologia_viene_utilizzata = false
+    self.tipologie.each {|tipologia| almeno_una_tipologia_viene_utilizzata = true if tipologia.utilizzata?}
+    return almeno_una_tipologia_viene_utilizzata
+  end
+
+  # Verifica se la prova è utilizzata in qualche contesto
+  # Una prova è utilizzata se:
+  # - È associata a tipologie
+  # - È usata come prova aggiuntiva in rapporti
+  # - È usata automaticamente in rapporti tramite tipologie
+  # - Una tipologia che la contiene è utilizzata in rapporti
+  def utilizzata?
+    if self.prova_tipologia_items.empty? && 
+       self.prova_rapporto_items.empty? && 
+       self.auto_prova_rapporto_items.empty? && 
+       !self.almeno_una_tipologia_che_la_contiene_viene_utilizzata
+      return false
+    else
+      return true
+    end
+  end
+
+  # Verifica se la prova è modificabile
+  # Una prova è modificabile se:
+  # - Non è utilizzata, oppure
+  # - È utilizzata solo in tipologie ma non in rapporti
+  def modificabile?
+    if self.utilizzata?
+      if self.prova_rapporto_items.empty? && 
+         self.auto_prova_rapporto_items.empty? && 
+         !self.almeno_una_tipologia_che_la_contiene_viene_utilizzata
+        # È utilizzata solo nelle tipologie, ma non nei rapporti
+        return true
+      else
+        return false
+      end
+    else
+      return true
+    end
+  end
+
+  # Validazione personalizzata per impedire la modifica di prove già utilizzate in rapporti
+  def validate
+    errors.add "Errore:", "Prova non modificabile in quanto risultà già utilizzata" if !self.modificabile?
+  end
+end 

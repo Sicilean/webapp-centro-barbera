@@ -1,0 +1,48 @@
+# Documentazione del docker-compose.yml
+# ===================================
+#
+# Questo file definisce l'ambiente multi-container per l'applicazione Barbera,
+# utilizzando Docker Compose. Configura due servizi principali:
+# 1. Un servizio web per l'applicazione Rails
+# 2. Un servizio database MySQL
+#
+# Il file è progettato per:
+# - Orchestrare i container necessari con le giuste dipendenze
+# - Configurare la persistenza dei dati attraverso volumi Docker
+# - Esporre le porte necessarie per accedere ai servizi
+# - Definire le variabili d'ambiente richieste
+
+services:
+  # Servizio Web - Contiene l'applicazione Rails
+  web:
+    build: .                      # Costruisce l'immagine dal Dockerfile nella directory corrente
+    ports:
+      - "3000:3000"               # Mappa la porta 3000 del container alla porta 3000 dell'host
+    volumes:
+      - .:/app                    # Monta la directory corrente nella directory /app del container
+      - bundle_cache:/usr/local/bundle  # Volume persistente per le gemme Ruby installate
+    depends_on:
+      - db                        # Assicura che il servizio db sia avviato prima del web
+    environment:
+      - RAILS_ENV=development     # Imposta l'ambiente Rails a development
+      - BUNDLE_PATH=/usr/local/bundle  # Specifica dove Bundler installerà le gemme
+    tty: true                     # Alloca un TTY per il container (utile per debugging)
+    stdin_open: true              # Mantiene stdin aperto (equivalente a -i in docker run)
+
+  # Servizio Database - MySQL 5.5 compatibile con Rails 2.3.8
+  db:
+    image: mysql:5.5              # Usa l'immagine ufficiale MySQL 5.5
+    command: --character-set-server=utf8 --collation-server=utf8_general_ci  # Configura MySQL per UTF-8
+    environment:
+      - MYSQL_ROOT_PASSWORD=password  # Imposta la password di root di MySQL
+      - MYSQL_DATABASE=barbera_development  # Crea il database barbera_development
+    volumes:
+      - db_data:/var/lib/mysql    # Volume persistente per i dati del database
+      - ./barbera_development_schema_only.sql:/docker-entrypoint-initdb.d/barbera_development_schema_only.sql  # Script di inizializzazione
+    ports:
+      - "3306:3306"               # Mappa la porta MySQL alla porta locale 3306
+
+# Definizione dei volumi per la persistenza dei dati
+volumes:
+  db_data:                        # Volume per i dati MySQL
+  bundle_cache:                   # Volume per le gemme Ruby 

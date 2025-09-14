@@ -1,20 +1,21 @@
 
-<div style ="height: 5.5cm;">
+<div class="header-section">
   <% if @rapporto.tipologia.sinal  %>
     <%= mostra_parametro :rdp_stampa_intestazione_con_sinal %>
   <% else %>
     <%= mostra_parametro :rdp_stampa_intestazione %>
   <% end %>
-</div>
-  <br />
-  <div style align="center">
+  
+  <div class="spacer-medium"></div>
+  
+  <div style="text-align: center;">
     <% if @rapporto.numero_supplemento.blank? %>
       <h1>RAPPORTO DI PROVA Nr. <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @rapporto.numero %></span></h1>
     <% else %>
       <h2>SUPPLEMENTO Nr. <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @rapporto.numero_supplemento %></span> AL RAPPORTO DI PROVA Nr. <span style ="<%= @style_nascosto_se_stampa_modello_vuoto-%>"><%= @rapporto.numero %></span></h2>
     <% end %>
-    <br/>
   </div>
+</div>
 
   <table class="campione_di" >
     <tr  >
@@ -122,14 +123,9 @@
       </td>
     </tr>
   </table>
-  <br/>
-  <br/>
-  <!-- il seguente puo andare al max a 9.9 altrimenti con il suppl si va in due pagine, es rpd 1271-->
-<div style="height: 9.8cm;border:0px;clear: both; " >
-  <div style align="center">
-    <h3>RISULTATI DELLE PROVE</h3>
-  </div>
-    <br />
+
+<div class="results-section no-page-break">
+  <h3>RISULTATI DELLE PROVE</h3>
     <table class="risultati" border ="0" cellpadding="0" cellspacing="0">
       <tr>
         <th >Prova</th>
@@ -189,16 +185,14 @@
       <% end %>
 
     </table>
-  </div>
-
-
-<div style="font-size: 12px; height: 2.3cm " >
-<%= "#{mostra_parametro :rdp_stampa_sinal}<br/><br/>" if @rapporto.tipologia.sinal %>
-<%= "#{trasforma_acapo_in_br @rapporto.pie_pagina}<br/>" unless @rapporto.pie_pagina.blank? %>
 </div>
 
+<div class="spacer-medium">
+  <%= "#{mostra_parametro :rdp_stampa_sinal}<br/><br/>" if @rapporto.tipologia.sinal %>
+  <%= "#{trasforma_acapo_in_br @rapporto.pie_pagina}<br/>" unless @rapporto.pie_pagina.blank? %>
+</div>
 
-<div style="font-family: sans-serif" >
+<div class="signature-section">
   <hr>
   <table width ="100%" border ="0" cellpadding="0" cellspacing="0">
     <tr>
@@ -221,14 +215,14 @@
    <br />
   <% end %>
 
-  <div style = "font-size: 8px;">
+  <div class="page-footer">
     <%= "#{mostra_parametro :rdp_stampa_sinal_pie_pagina}<br/>" if @rapporto.tipologia.sinal %>
     <%= mostra_parametro :rdp_stampa_pie_pagina_1 %><br/>
     <%= "#{trasforma_acapo_in_br @rapporto.tipologia.pie_pagina}" unless @rapporto.tipologia.pie_pagina.blank? %>
     <% unless  @rapporto.numero_supplemento.blank? %>
       <br/><%= mostra_parametro :rdp_stampa_frase_per_supplemento %><br/>
     <% end %>
-    <div style="font-size:0;height:0px;"></div>
+    <div class="spacer-small"></div>
     <%= mostra_parametro :rdp_stampa_pie_pagina_3 %>
   </div>
 </div>

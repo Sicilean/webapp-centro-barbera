@@ -1,0 +1,295 @@
+# Documentazione del Modello Variabile
+# ===============================
+#
+# Il modello Variabile rappresenta i parametri che vengono misurati o calcolati durante le analisi 
+# enologiche. Una variabile può essere di due tipi:
+# - input: un parametro misurato direttamente (es. pH, acidità)
+# - funzione: un parametro calcolato tramite una formula matematica usando altre variabili
+#
+# Ogni variabile è associata a una matrice (tipo di materiale) ed ha un simbolo unico all'interno
+# di quella matrice. Le variabili sono collegate alle prove mediante ProvaVariabileItem e 
+# possono essere utilizzate nei rapporti di prova mediante VariabileRapportoItem.
+#
+# Le variabili di tipo funzione possono referenziare altre variabili all'interno della loro
+# formula, creando relazioni di dipendenza tra variabili.
+
+class Variabile < ActiveRecord::Base
+
+  belongs_to :udm_item    # Unità di misura associata alla variabile
+  belongs_to :matrice     # Tipo di materiale su cui viene misurata la variabile
+  
+  # Relazione con le prove attraverso la tabella di join prova_variabile_items
+  has_many :prova_variabile_items, :dependent => :destroy
+  has_many :prove, :through => :prova_variabile_items
+
+  # Relazione con i rapporti attraverso la tabella di join variabile_rapporto_items
+  has_many :variabile_rapporto_items, :dependent => :destroy
+  has_many :rapporti, :through => :variabile_rapporto_items
+
+  # Callback per la pulizia della formula prima della validazione
+  before_validation :pulisci_funzione
+  
+  # Il seguente metodo restituisce 'false' per Variabile.destroy nel caso la variabile sia utilizzata
+  before_destroy :cancella_pure_dato_che_non_e_utilizzata
+  
+  # Logging dopo l'eliminazione di una variabile
+  after_destroy { |record| logger.info( "Variabile '#{record.matrice.nome}-#{record.simbolo}' (id:#{record.id}) eliminata." ) }
+
+  # Validazioni
+  # La presenza dell'unità di misura è opzionale poiché le unità di misura esistono
+  # solo per le variabili da mostrare
+  validates_presence_of :nome, :simbolo, :tipo, :matrice
+  
+  # Validazioni specifiche per le variabili di tipo funzione
+  validates_presence_of :funzione, :if => :is_funzione?,
+                        :message => 'deve essere presente per il tipo selezionato'
+  validates_inclusion_of :funzione, :in => ['', nil], :if => :is_input?,
+                        :message => 'NON deve essere presente per il tipo selezionato'
+  validates_presence_of :decimali, :if => :is_funzione?,
+                        :message => 'deve essere selezionato per il tipo selezionato'
+                        
+  # Validazioni per i valori min e max
+  validates_numericality_of :min, :max, :allow_nil => true
+
+  # Validazione di unicità del simbolo all'interno della stessa matrice
+  validates_uniqueness_of :simbolo, :case_sensitive => false, :scope => :matrice_id
+
+  # Metodo per generare un'etichetta leggibile per la variabile
+  # Formato: "matrice-simbolo-nome" o "simbolo-nome" se la matrice non è definita
+  def to_label
+    if matrice.nil?
+      "#{simbolo}-#{nome}"
+    else
+      "#{matrice.nome}-#{simbolo}-#{nome}"
+    end
+  end
+
+  # Metodo setter per il simbolo che automaticamente converte il testo in maiuscolo
+  def simbolo=(testo)
+    testo = testo.upcase unless testo.nil?
+    write_attribute(:simbolo, testo)
+  end
+
+  # Metodo per pulire e normalizzare la funzione prima della validazione
+  # Esegue:
+  # - Rimozione degli spazi
+  # - Rimozione del segno = iniziale
+  # - Conversione in maiuscolo
+  # - Sostituzione delle virgole con punti (notazione inglese)
+  # - Sostituzione dell'operatore ^ (Excel) con ** (Ruby)
+  # - Rimozione dei numeri dopo i simboli delle variabili (es. B12 -> B)
+  def pulisci_funzione
+    if self.funzione.nil?
+      self.funzione = ''
+    else
+      # Levo spazi dappertutto
+      self.funzione.gsub!(/\s/,'')
+      # Levo eventuale segno di '=' (solo all'inizio)
+      self.funzione.gsub!(/^=/,'')
+      # Tutto maiuscolo
+      self.funzione.upcase!
+      # Sostituisco 'virgola' con 'punto' (notazione inglese)
+      self.funzione.gsub!(/,/,'.')
+      # Sostituisco elevatore potenza excel "^" con quello di ruby "**"
+      self.funzione.gsub!(/\^/,'**')
+      # Gestione dei simboli di variabili seguiti da numeri (es. B12 -> B)
+      re = /[A-Z]{1,4}[0-9]{1,2}/
+      self.funzione =~ re
+      unless $&.nil?
+        numero = $&.sub!(/[A-Z]{1,4}/,'')
+        self.funzione.gsub!(re) {|match| match.delete numero}
+      end
+    end
+  end
+
+  # Metodo per verificare se la variabile è di tipo funzione
+  def is_funzione?
+    tipo == 'funzione'
+  end
+
+  # Metodo per verificare se la variabile è di tipo input (misurazione diretta)
+  def is_input?
+    !is_funzione?
+  end
+
+  # Metodo per ottenere l'unità di misura della variabile
+  def unita_di_misura
+    udm_item.nome unless udm_item.nil?
+  end
+
+  # Metodo che restituisce un array con i simboli delle variabili utilizzate nella funzione
+  def simboli
+    return simboli_per_funzione(funzione)
+  end
+
+  # Metodo che restituisce un array di oggetti Variabile, con valori nil per le variabili
+  # presenti nella formula ma assenti nel database
+  def variabili_indipendenti_con_assenti
+    return simboli.map {|simbolo| get_variabile(simbolo,matrice)}
+  end
+
+  # Metodo che restituisce le variabili indipendenti effettivamente presenti nel database
+  def variabili_indipendenti
+    return variabili_indipendenti_con_assenti.compact
+  end
+
+  # Metodo che restituisce una stringa con i simboli delle variabili coinvolte
+  def variabili_coinvolte_in_words
+    return variabili_coinvolte.map{|x| "<#{x.simbolo}>"}.to_s
+  end
+
+  # Metodo che verifica se tutte le variabili indipendenti sono presenti nel database
+  def variabili_indipendenti_tutte_presenti?
+    return variabili_indipendenti_con_assenti.size == variabili_indipendenti.size
+  end
+
+  # Metodo che restituisce i simboli delle variabili indipendenti assenti nel database
+  def variabili_indipendenti_assenti
+    unless variabili_indipendenti_tutte_presenti?
+      return (simboli - variabili_indipendenti.map {|variabile| variabile.simbolo })
+    end
+  end
+
+  # Metodo che restituisce le variabili che utilizzano questa variabile nelle loro funzioni
+  def variabili_in_cui_viene_utilizzata
+    # Cerca tutte le variabili che sono funzioni della stessa matrice
+    variabili = Variabile.all(:conditions => ["tipo= ? AND matrice_id = ?", 'funzione', self.matrice.id])
+    variabili_che_la_utilizzano = []
+    variabili.each {|variabile| variabili_che_la_utilizzano << variabile if ((variabile.id != self.id) && (variabile.simboli.include? self.simbolo)) }
+    return variabili_che_la_utilizzano
+  end
+
+  # Metodo che verifica se la variabile non è utilizzata in altre variabili
+  def viene_utilizzata_in_altre_variabili?
+    variabili_in_cui_viene_utilizzata.empty?
+  end
+
+  # Metodo di callback per impedire la cancellazione di variabili utilizzate
+  def cancella_pure_dato_che_non_e_utilizzata
+    if !self.utilizzata?
+      return true
+    else
+       add_to_base "La Variabile non puo' essere cancellata in quanto utilizzata"
+       logger.info("Tentativo di cancellazione della Variabile '#{matrice.nome}-#{simbolo}' (id:#{id}) andato a vuoto in quanto utilizzata.")
+      return false
+    end
+  end
+
+  # Metodo che verifica se la variabile è utilizzata in qualsiasi contesto
+  # (in altre variabili, in prove o in rapporti)
+  def utilizzata?
+    if self.variabili_in_cui_viene_utilizzata.empty? && self.prove.empty? && self.variabile_rapporto_items.empty?
+      return false
+    else
+      return true
+    end
+  end
+
+  # Metodo che verifica se la variabile può essere modificata
+  # Una variabile può essere modificata se non è utilizzata o se è utilizzata ma non in rapporti
+  def modificabile?
+    if self.utilizzata?
+      if self.variabile_rapporto_items.empty?
+        return true
+      else
+        return false
+      end
+    else
+      return true
+    end
+  end
+
+  # Metodo che restituisce tutte le variabili coinvolte nella funzione
+  # Questo include sia le variabili dirette che quelle indirette (variabili utilizzate
+  # nelle funzioni delle variabili dirette)
+  def variabili_coinvolte
+    if is_funzione?
+      # Inizia con le variabili dirette della formula
+      risultato = variabili_indipendenti_per_funzione(funzione, matrice)
+      nuova_funzione = ''
+      nuova_funzione.replace funzione
+      contatore = 0
+      max_iterazioni = 100
+      until variabili_indipendenti_che_sono_funzioni_per_funzione(nuova_funzione,matrice).empty? || contatore == max_iterazioni
+        # Sostituisce le variabili che sono funzioni con le loro formule
+        variabili_indipendenti_che_sono_funzioni_per_funzione(nuova_funzione, matrice).each do |variabile|
+          nuova_funzione.gsub!(/[A-Z]{1,4}/) do |match|
+            if match == variabile.simbolo
+              "(#{variabile.funzione})"
+            else
+              match
+            end
+          end
+        end
+        risultato += variabili_indipendenti_per_funzione(nuova_funzione, matrice)
+        risultato.uniq!
+        
+        contatore += 1
+      end
+      if contatore == max_iterazioni
+        raise "Errore... non ci dovrebbe essere stato, ma siamo difronte ad un RIFERIMENTO CIRCOLARE"
+      else
+        return risultato
+      end
+    else
+      return []
+    end
+  end
+
+  # Metodo che restituisce la funzione sviluppata, sostituendo i simboli delle variabili
+  # con le loro funzioni quando sono di tipo funzione
+  def funzione_sviluppata
+    if is_funzione?
+      risultato = ''
+      risultato.replace funzione
+      contatore = 0
+      max_iterazioni = 100
+      until variabili_indipendenti_che_sono_funzioni_per_funzione(risultato,matrice).empty? || contatore == max_iterazioni
+        variabili_indipendenti_che_sono_funzioni_per_funzione(risultato, matrice).each do |variabile|
+          risultato.gsub!(/[A-Z]{1,4}/) do |match|
+            if match == variabile.simbolo
+              "(#{variabile.funzione})"
+            else
+              match
+            end
+          end
+        end
+        contatore += 1
+      end
+      if contatore == max_iterazioni
+        raise "Errore: RIFERIMENTO CIRCOLARE nella funzione"
+      else
+        return risultato
+      end
+    else
+      return nil
+    end
+  end
+
+  # Metodo che decodifica una funzione, sostituendo i simboli delle variabili con i loro nomi
+  def funzione_decodificata
+    return decodifica(funzione)
+  end
+
+  # Metodo che restituisce la funzione sviluppata e decodificata
+  def funzione_sviluppata_decodificata
+    return decodifica(funzione_sviluppata)
+  end
+
+  # Metodo di supporto per decodificare una funzione
+  def decodifica(funzione_da_decodificare)
+    unless funzione_da_decodificare.blank?
+      testo = funzione_da_decodificare.dup
+      simboli_per_funzione(funzione_da_decodificare).each do |simbolo|
+        variabile = get_variabile(simbolo, matrice)
+        testo.gsub!(/#{simbolo}/, variabile.nome) unless variabile.nil?
+      end
+      return testo
+    end
+  end
+
+  # Validazione personalizzata per verificare che la variabile sia modificabile
+  def validate
+    errors.add "Errore:", "Prova non modificabile in quanto risultà già utilizzata" if !self.modificabile?
+  end
+end 

@@ -9,7 +9,7 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20101213082809) do
+ActiveRecord::Schema.define(:version => 20240101000003) do
 
   create_table "auto_prova_rapporto_items", :force => true do |t|
     t.integer  "prova_id"

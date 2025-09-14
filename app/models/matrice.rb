@@ -51,7 +51,9 @@ class Matrice < ActiveRecord::Base
   end
 
   def validate
-    errors.add "Errore:", "Matrice non modificabile in quanto risultà già utilizzata" if self.utilizzata?
+    # Permettiamo la modifica anche se è utilizzata (rimuoviamo la validazione)
+    # La validazione precedente impediva la modifica del nome
+    # errors.add "Errore:", "Matrice non modificabile in quanto risultà già utilizzata" if self.utilizzata?
   end
 
 end

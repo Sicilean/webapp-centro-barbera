@@ -1,0 +1,10 @@
+<% if error_messages && error_messages.errors.any? %>
+<div id="errorExplanation" class="errorExplanation">
+  <h2><%= pluralize(error_messages.errors.count, "errore") %> durante il salvataggio:</h2>
+  <ul>
+  <% error_messages.errors.full_messages.each do |msg| %>
+    <li><%= msg %></li>
+  <% end %>
+  </ul>
+</div>
+<% end %> 

@@ -1,3 +1,5 @@
+version: '3'
+
 services:
   web:
     build: .
@@ -6,6 +8,7 @@ services:
     volumes:
       - .:/app
       - bundle_cache:/usr/local/bundle
+      - pdf_data:/app/pdf
     depends_on:
       - db
     environment:
@@ -13,6 +16,10 @@ services:
       - BUNDLE_PATH=/usr/local/bundle
     tty: true
     stdin_open: true
+    restart: unless-stopped
+    networks:
+      barbera-network:
+        ipv4_address: 172.19.0.3
 
   db:
     image: mysql:5.5
@@ -22,10 +29,22 @@ services:
       - MYSQL_DATABASE=barbera_development
     volumes:
       - db_data:/var/lib/mysql
-      - ./barbera_development_may_30_2010.sql:/docker-entrypoint-initdb.d/barbera_development_may_30_2010.sql
+      - ./barbera_development_complete.sql:/docker-entrypoint-initdb.d/schema.sql
     ports:
       - "3306:3306"
+    restart: unless-stopped
+    networks:
+      barbera-network:
+        ipv4_address: 172.19.0.2
 
 volumes:
   db_data:
-  bundle_cache: 
+  bundle_cache:
+  pdf_data:
+
+networks:
+  barbera-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.19.0.0/16 

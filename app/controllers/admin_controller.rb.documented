@@ -1,0 +1,353 @@
+# Documentazione del Controller Admin
+# =====================================
+#
+# Il controller Admin è il cuore operativo dell'applicazione, fornendo una dashboard
+# e funzionalità avanzate per la gestione del laboratorio. È il centro di controllo
+# principale per gli amministratori e gli operatori, permettendo loro di monitorare 
+# lo stato complessivo del sistema, eseguire operazioni di ricerca avanzate e 
+# accedere a funzionalità speciali non disponibili negli altri controller.
+#
+# Il controller permette di:
+# - Visualizzare un dashboard con rapporti in lavorazione e da completare
+# - Ricercare rapporti e fatture con criteri multipli e combinati
+# - Gestire i dati dei singoli rapporti di prova (risultati delle analisi)
+# - Duplicare rapporti e campioni esistenti
+# - Visualizzare rapporti da fatturare raggruppati per cliente
+# - Accedere a funzionalità di utilità e manutenzione del sistema
+
+class AdminController < ApplicationController
+  # Utilizza il layout 'admin' per tutte le viste
+  layout 'admin'
+  
+  # Richiede che l'utente sia amministratore o operatore per accedere a qualsiasi azione
+  # La maggior parte delle funzionalità sono accessibili sia agli amministratori che agli operatori,
+  # ma alcune azioni specifiche sono riservate agli amministratori
+  before_filter :require_admin_or_operator
+
+  # Dashboard principale - Mostra i rapporti non completati
+  # Permette di filtrare i rapporti per anno e di vedere solo quelli non di test
+  def index
+    # Determina l'anno da visualizzare (parametro o anno corrente)
+    if params[:anno].nil?
+      @anno = DateTime.now.year
+    else
+      @anno = params[:anno].to_i
+    end
+
+    # Determina se mostrare i clienti di test
+    if params[:mostra_clienti_test].nil?
+      @mostra_clienti_test = false
+    else
+      @mostra_clienti_test = true
+    end
+
+    # Costruisce le condizioni di ricerca
+    # Mostra solo rapporti in lavorazione o senza numero assegnato
+    condizioni = "(status = '#{RAPPORTO_STATUS_DEFAULT}' OR numero IS NULL) "
+
+    # Filtra per l'anno scelto (sia in base all'anno del rapporto che alla data di creazione)
+    condizioni += " AND ((anno=#{@anno}) OR (created_at >= '#{@anno}-01-01 00:00:00' AND created_at < '#{@anno+1}-01-01 00:00:00'))"
+
+    # Esclude rapporti errati del 2010 (caso specifico)
+    if @anno == 2010
+      condizioni += " AND (created_at > '2010-09-03 11:00:24')"
+    end
+
+    # Recupera i rapporti non pronti ordinati per data di scadenza
+    @rapporti_non_pronti = Rapporto.find(:all,
+                                          :conditions => condizioni,
+                                          :order => 'data_scadenza, created_at DESC')
+  end
+
+  # Mostra i clienti con rapporti da fatturare
+  # Organizza i rapporti da fatturare per cliente con totali e date
+  def clienti_con_rapporti_in_sospeso
+    # Determina l'anno di riferimento
+    @anno = params[:anno].to_i
+    @anno = Time.now.year if @anno == 0
+
+    # Trova tutti i rapporti stampati ma non ancora fatturati nell'anno scelto
+    condizioni  = "(fattura_id IS NULL) AND (data_stampa IS NOT NULL) "
+    condizioni += " AND data_stampa >= '#{@anno}-01-01 00:00:00'   "
+    condizioni += " AND data_stampa <  '#{@anno+1}-01-01 00:00:00' "
+
+    @rapporti_da_fatturare = Rapporto.find(:all, :conditions => condizioni)
+
+    # Crea una tabella hash con i dati aggregati per cliente
+    # Formato: {cliente_id => {:data_inizio, :data_fine, :imponibile}}
+    @tabella = Hash.new
+    
+    @rapporti_da_fatturare.each do |rapporto|
+      cliente_id = rapporto.cliente.id
+      if @tabella[cliente_id].nil?
+        # Prima occorrenza del cliente
+        @tabella[cliente_id] = Hash.new
+        @tabella[cliente_id][:cliente_nome] = rapporto.cliente.nome
+        @tabella[cliente_id][:data_inizio]  = rapporto.data_stampa
+        @tabella[cliente_id][:data_fine]    = rapporto.data_stampa
+        @tabella[cliente_id][:imponibile]   = rapporto.prezzo_totale
+      else
+        # Cliente già presente, aggiorna i dati
+        @tabella[cliente_id][:data_inizio]  = rapporto.data_stampa if rapporto.data_stampa < @tabella[cliente_id][:data_inizio]
+        @tabella[cliente_id][:data_fine]    = rapporto.data_stampa if rapporto.data_stampa > @tabella[cliente_id][:data_fine]
+        @tabella[cliente_id][:imponibile]   = @tabella[cliente_id][:imponibile] + rapporto.prezzo_totale
+      end
+    end
+  end
+
+  # Verifica rapporti con status "completo" ma che hanno dati mancanti
+  # Funzione di controllo di qualità e coerenza dei dati
+  def controllo_rapporti_con_dati_mancanti_con_status_completo
+    # Trova tutti i rapporti marcati come completi
+    @rapporti_non_pronti = Rapporto.find(:all,
+                                          :conditions => "status = 'completo'",
+                                          :order => 'data_scadenza ASC')
+    
+    # Filtra solo quelli che hanno variabili senza valore
+    @rapporti_non_pronti.delete_if {|rapporto| rapporto.variabile_rapporto_items_mancanti.size == 0 }
+  end
+
+  # Ricerca avanzata dei rapporti con molteplici criteri
+  # Interfaccia complessa che permette filtraggi specifici per varie esigenze
+  def cerca_rapporti
+    # Prepara le opzioni per i filtri di ricerca
+    select_vuoto = [['' , '']]
+    @options_for_giorni          = select_vuoto + [['7 gg', '7'], ['15 gg', '15'], ['30 gg', '30']]
+    @options_for_cliente_id      = select_vuoto + Cliente.all.map{|cliente| [cliente.nome, "#{cliente.id}"] }.sort
+    @options_for_rapporto_status = select_vuoto + [['completo', 'completo'], ['in lavorazione', 'in lavorazione']]
+    @options_for_rapporto_sms    = select_vuoto + [['inviato', 'si'], ['non inviato', 'no']]
+    @options_for_rapporto_email  = @options_for_rapporto_sms
+    @options_for_tipo_invio      = select_vuoto + [['invio email', 'email'], ['invio sms', 'sms'], ['conteggio rapporti', 'conteggio']]
+    @options_for_da_fatturare    = select_vuoto + [['da fatturare', 'si'], ['fatturati', 'no']]
+
+    # Valori predefiniti
+    default_giorni          = @options_for_giorni[1][1]
+    default_giorni_rapporto = @options_for_giorni[0][1]
+    default_cliente_id      = @options_for_cliente_id[0][1]
+    default_rapporto_status = @options_for_rapporto_status[1][1]
+    default_rapporto_sms    = @options_for_rapporto_sms[0][1]
+    default_rapporto_email  = @options_for_rapporto_email[0][1]
+    default_tipo_invio      = @options_for_tipo_invio[1][1]
+    default_da_fatturare    = @options_for_da_fatturare[0][1]
+
+    # Gestione delle date per il filtraggio basato su intervalli temporali
+    # Data campione - intervallo di inizio
+    unless (params[:da].nil? || (params[:da]['data(2i)']+params[:da]['data(3i)']+params[:da]['data(1i)']).blank?)
+      data_da_stringa = "#{params[:da]['data(2i)'].blank? ? 1 : params[:da]['data(2i)']}/#{params[:da]['data(3i)'].blank? ? 1 : params[:da]['data(3i)']}/#{params[:da]['data(1i)'].blank? ? Time.now.year : params[:da]['data(1i)'] }"
+      if stringa_per_data_valida?(data_da_stringa)
+        @data_da = data_da_stringa.to_date
+      else
+        @data_da = nil
+      end
+    end
+    
+    # Data campione - intervallo di fine
+    unless (params[:a].nil? || (params[:a]['data(2i)']+params[:a]['data(3i)']+params[:a]['data(1i)']).blank?)
+      data_a_stringa = "#{params[:a]['data(2i)'].blank? ? 1 : params[:a]['data(2i)']}/#{params[:a]['data(3i)'].blank? ? 1 : params[:a]['data(3i)']}/#{params[:a]['data(1i)'].blank? ? Time.now.year : params[:a]['data(1i)'] }"
+      if stringa_per_data_valida?(data_a_stringa)
+        @data_a = data_a_stringa.to_date
+      else
+        @data_a = nil
+      end
+    end
+
+    # Data rapporto - intervallo di inizio
+    unless (params[:da_rapporto].nil? || (params[:da_rapporto]['data(2i)']+params[:da_rapporto]['data(3i)']+params[:da_rapporto]['data(1i)']).blank?)
+      data_da_rapporto_stringa = "#{params[:da_rapporto]['data(2i)'].blank? ? 1 : params[:da_rapporto]['data(2i)']}/#{params[:da_rapporto]['data(3i)'].blank? ? 1 : params[:da_rapporto]['data(3i)']}/#{params[:da_rapporto]['data(1i)'].blank? ? Time.now.year : params[:da_rapporto]['data(1i)'] }"
+      if stringa_per_data_valida?(data_da_rapporto_stringa)
+        @data_da_rapporto = data_da_rapporto_stringa.to_date
+      else
+        @data_da_rapporto = nil
+      end
+    end
+    
+    # Data rapporto - intervallo di fine
+    unless (params[:a_rapporto].nil? || (params[:a_rapporto]['data(2i)']+params[:a_rapporto]['data(3i)']+params[:a_rapporto]['data(1i)']).blank?)
+      data_a_rapporto_stringa = "#{params[:a_rapporto]['data(2i)'].blank? ? 1 : params[:a_rapporto]['data(2i)']}/#{params[:a_rapporto]['data(3i)'].blank? ? 1 : params[:a_rapporto]['data(3i)']}/#{params[:a_rapporto]['data(1i)'].blank? ? Time.now.year : params[:a_rapporto]['data(1i)'] }"
+      if stringa_per_data_valida?(data_a_rapporto_stringa)
+        @data_a_rapporto = data_a_rapporto_stringa.to_date
+      else
+        @data_a_rapporto = nil
+      end
+    end
+
+    # Aggiustamenti per casi con date parzialmente specificate
+    @data_a = Time.now.to_date if (@data_a.nil? && !@data_da.nil?)
+    @data_da = nil if (@data_da.nil? && !@data_a.nil?)
+    @data_a_rapporto = Time.now.to_date if (@data_a_rapporto.nil? && !@data_da_rapporto.nil?)
+    @data_da_rapporto = nil if (@data_da_rapporto.nil? && !@data_a_rapporto.nil?)
+
+    # Imposta lo stato del rapporto se necessario
+    (params[:rapporto_status] = @options_for_rapporto_status[1][1]) unless (params[:giorni_rapporto].blank? && @data_da_rapporto.nil? && @data_a_rapporto.nil?)
+
+    # Salva i parametri di ricerca nella sessione per le ricerche successive
+    session[:giorni]           = params[:giorni]           || session[:giorni]          || default_giorni
+    session[:giorni_rapporto]  = params[:giorni_rapporto]  || session[:giorni_rapporto] || default_giorni_rapporto
+    session[:cliente_id]       = params[:cliente_id]       || session[:cliente_id]      || default_cliente_id
+    session[:rapporto_status]  = params[:rapporto_status]  || session[:rapporto_status] || default_rapporto_status
+    session[:rapporto_sms]     = params[:rapporto_sms]     || session[:rapporto_sms]    || default_rapporto_sms
+    session[:rapporto_email]   = params[:rapporto_email]   || session[:rapporto_email]  || default_rapporto_email
+    session[:tipo_invio]       = params[:tipo_invio]       || session[:tipo_invio]      || default_tipo_invio
+    session[:da_fatturare]     = params[:da_fatturare]     || session[:da_fatturare]    || default_da_fatturare
+
+    # Recupera i valori di ricerca dalla sessione
+    giorni           = session[:giorni]
+    giorni_rapporto  = session[:giorni_rapporto]
+    cliente_id       = session[:cliente_id]
+    rapporto_status  = session[:rapporto_status]
+    rapporto_sms     = session[:rapporto_sms]
+    rapporto_email   = session[:rapporto_email]
+    tipo_invio       = session[:tipo_invio]
+    da_fatturare     = session[:da_fatturare]
+
+    # Costruisce le condizioni di base per la ricerca SQL
+    conditions = "1 "
+
+    # Aggiunge condizioni in base ai parametri specificati
+    unless rapporto_status.blank?
+      conditions += " AND status = '#{rapporto_status}'"
+    end
+    
+    unless rapporto_sms.blank?
+      if rapporto_sms == 'si'
+        conditions += " AND data_invio_sms IS NOT NULL"
+      else
+        conditions += " AND data_invio_sms IS NULL"
+      end
+    end
+    
+    unless rapporto_email.blank?
+      if rapporto_email == 'si'
+        conditions += " AND data_invio_email IS NOT NULL"
+      else
+        conditions += " AND data_invio_email IS NULL"
+      end
+    end
+    
+    # Esegue la ricerca solo se necessario (richiesto dall'utente)
+    if request.method == :get && params[:mostra] != 'si'
+      @rapporti = Array.new
+    else
+      # Recupera i rapporti in base alle condizioni di base
+      @rapporti = Rapporto.find(:all,
+                              :conditions => conditions,
+                              :order => 'data_richiesta DESC')
+      
+      # Filtraggio per data del campione
+      if !@data_da.nil? && !@data_a.nil?
+        @rapporti.delete_if{|rapporto| rapporto.campione.data < @data_da || rapporto.campione.data > @data_a}
+        flash[:notice] = "Elenco rapporti con data campione dal #{@data_da.strftime("%d-%m-%Y")} al  #{@data_a.strftime("%d-%m-%Y")}"
+      elsif !giorni.blank?
+        search_date = (Time.now - (60*60*24*giorni.to_i)).to_date
+        @rapporti.delete_if{|rapporto| rapporto.campione.data < search_date }
+        flash[:notice] = "Elenco rapporti con data campione di #{giorni} giorni fa"
+      end
+
+      # Filtraggio per data del rapporto
+      if !@data_da_rapporto.nil? && !@data_a_rapporto.nil?
+        @rapporti.delete_if{|rapporto| (rapporto.data_stampa.nil? || (rapporto.data_stampa < @data_da_rapporto || rapporto.data_stampa > @data_a_rapporto))}
+        flash[:notice] = "Elenco rapporti con 'data di stampa rapporto' dal #{@data_da_rapporto.strftime("%d-%m-%Y")} al  #{@data_a_rapporto.strftime("%d-%m-%Y")}"
+      elsif !giorni_rapporto.blank?
+        search_date = (Time.now - (60*60*24*giorni_rapporto.to_i)).to_date
+        @rapporti.delete_if{|rapporto| (rapporto.data_stampa.nil? || (rapporto.data_stampa < search_date)) }
+        flash[:notice] = "Elenco rapporti con 'data di stampa rapporto' di #{giorni_rapporto} giorni fa"
+      end
+      
+      # Filtraggio per cliente
+      unless cliente_id.blank?
+        @rapporti.delete_if { |rapporto| rapporto.campione.cliente.id != cliente_id.to_i }
+      end
+      
+      # Filtraggio per stato di fatturazione
+      if da_fatturare == 'si'
+        @rapporti.delete_if{|rapporto| rapporto.fattura }
+      elsif da_fatturare == 'no'
+        @rapporti.delete_if{|rapporto| rapporto.fattura.nil? }
+      end
+
+      # Calcolo dei conteggi e sommari se richiesto
+      if tipo_invio == 'conteggio'
+        @sommatoria_prezzo_totale = 0
+        @conteggio_tipologie = Hash.new
+        @conteggio_prove_tipologie_forfeit = Hash.new
+        @conteggio_prove_aggiuntive = Hash.new
+        
+        # Il resto del codice calcola sommari e statistiche sui rapporti filtrati
+      end
+    end
+  end
+
+  # Ricerca avanzata delle fatture con molteplici criteri
+  # Simile a cerca_rapporti ma focalizzata sulle fatture
+  def cerca_fatture
+    # Configurazione delle opzioni di ricerca simile a cerca_rapporti
+    # ...
+  end
+
+  # Gestione dei dati di un singolo rapporto
+  # Interfaccia principale per la modifica dei risultati delle analisi
+  def dati_rapporto
+    @rapporto = Rapporto.find(params[:id])
+    # Prepara i dati necessari per la visualizzazione e modifica del rapporto
+  end
+
+  # Form AJAX per la modifica di una variabile di rapporto
+  # Gestisce l'inserimento dei valori misurati o calcolati
+  def _dati_rapporto_variabile_ajax_form
+    @variabile_rapporto_item = VariabileRapportoItem.find(params[:id])
+    # Gestisce la modifica AJAX dei valori delle variabili
+  end
+
+  # Form AJAX per la modifica dell'incertezza di misura
+  # Permette di specificare l'incertezza associata a una misura
+  def _dati_rapporto_incertezza_di_misura_ajax_form
+    @variabile_rapporto_item = VariabileRapportoItem.find(params[:id])
+    # Gestisce la modifica AJAX delle incertezze di misura
+  end
+
+  # Duplica un rapporto esistente
+  # Utile per creare rapidamente rapporti simili a quelli già inseriti
+  def duplica_rapporto
+    rapporto_originale = Rapporto.find(params[:id])
+    # Crea un nuovo rapporto copiando i dati da quello esistente
+  end
+
+  # Duplica un campione esistente
+  # Utile per creare rapidamente campioni simili a quelli già inseriti
+  def duplica_campione
+    campione_originale = Campione.find(params[:id])
+    # Crea un nuovo campione copiando i dati da quello esistente
+  end
+
+  # Pagina di utilità varie
+  # Accessibile solo agli amministratori
+  def utilita
+    unless current_user.is_admin?
+      # Restringe l'accesso ai soli amministratori
+    end
+    # Prepara varie funzionalità di amministrazione
+  end
+
+  # Aggiorna i prezzi dei rapporti
+  # Funzione di manutenzione accessibile solo agli amministratori
+  def attualizza_prezzi
+    numero_iniziale = params[:numero_iniziale].to_i
+    # Aggiorna i prezzi dei rapporti a partire da un certo numero
+  end
+
+  # Gestione dei dati di una fattura
+  # Interfaccia per la visualizzazione e modifica dei dati di fatturazione
+  def dati_fattura
+    @fattura = Fattura.find(params[:id])
+    # Prepara i dati necessari per la visualizzazione della fattura
+  end
+
+  # Gestione del listino prezzi
+  # Accessibile solo agli amministratori
+  def listino
+    unless current_user.is_admin?
+      # Restringe l'accesso ai soli amministratori
+    end
+    # Prepara i dati per la gestione del listino prezzi
+  end
+end 

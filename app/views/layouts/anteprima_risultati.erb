@@ -5,19 +5,19 @@
   <head>
     <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
-
-
     <% if params[:format] == 'pdf' %>
       <title>Anteprima risultati analisi</title>
       <meta name="author" content="Lab. Barbera"/>
       <meta name="subject" content="Anteprima risultati di analisi"/>
       <meta name="keywords" content="PDF, rapporto di prova"/>
     <% end %>
+    
+    <!-- CSS per il PDF -->
     <%= stylesheet_link_tag "anteprima_risultati", :media => "all" %>
-
+    <%= stylesheet_link_tag "prince", :media => "all" %>
 
   </head>
   <body>
-        <%= yield %>
+    <%= yield %>
   </body>
 </html>

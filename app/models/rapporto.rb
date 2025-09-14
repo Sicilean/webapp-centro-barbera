@@ -13,6 +13,26 @@ class Rapporto < ActiveRecord::Base
   has_many :variabile_rapporto_items, :dependent => :destroy
   has_many :variabili, :through => :variabile_rapporto_items
 
+  # Define virtual columns for ActiveScaffold to prevent nil errors
+  def dati_rapporto_link
+    nil  # This will be handled by the helper method
+  end
+  
+  def stampa_dati_link
+    nil  # This will be handled by the helper method
+  end
+  
+  def stampa_rapporto_link
+    nil  # This will be handled by the helper method
+  end
+  
+  def duplica_rapporto_link
+    nil  # This will be handled by the helper method
+  end
+  
+  def fattura_link
+    nil  # This will be handled by the helper method
+  end
 
 #  has_many :fattura_rapporto_items, :dependent => :destroy, :order => 'updated_at DESC'
 #  has_many :fatture, :through => :fattura_rapporto_items
@@ -65,7 +85,7 @@ class Rapporto < ActiveRecord::Base
     # se è già fissato non lo modifico (visto che la tipologia NON cambia)
     # TODO manca BLOCCARE il prezzo, se questo è stato posto di proposito pari a zero
     # n.b. che se il prezzo della tipologia è pari a zero (frequente per tipologie senza prove) la seguente non fa nulla (riassegna semmai lo zero)
-    if self.prezzo_tipologia_forfeit == 0 && self.tipologia.forfeit
+    if !self.tipologia.nil? && self.prezzo_tipologia_forfeit == 0 && self.tipologia.forfeit
 #      if self.tipologia.forfeit
 #        nuovo_prezzo = self.tipologia.prezzo
 #      else
@@ -133,7 +153,8 @@ class Rapporto < ActiveRecord::Base
     write_attribute(:prezzo_tipologia_forfeit, euro.to_f * 100) # we store cents in the database
   end
   def prezzo_tipologia_forfeit
-    read_attribute(:prezzo_tipologia_forfeit) / 100
+    value = read_attribute(:prezzo_tipologia_forfeit)
+    value.nil? ? 0 : value / 100
   end
 
   def to_label

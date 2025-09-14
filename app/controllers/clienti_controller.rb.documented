@@ -1,0 +1,95 @@
+# Documentazione del Controller Clienti
+# =====================================
+#
+# Il controller Clienti gestisce tutte le operazioni relative ai clienti del laboratorio.
+# I clienti sono entità fondamentali del sistema poiché sono collegati a campioni, rapporti
+# di prova e fatture. Il controller permette di gestire sia le informazioni anagrafiche
+# che quelle fiscali dei clienti, con particolare attenzione alla possibilità di specificare
+# indirizzi di fatturazione diversi dall'indirizzo principale.
+#
+# Il controller permette di:
+# - Creare, visualizzare, modificare ed eliminare clienti
+# - Visualizzare i campioni, rapporti e fatture associati a ciascun cliente
+# - Gestire i contatti per comunicazioni (email, telefono, cellulare)
+# - Gestire i dati fiscali e gli indirizzi alternativi per la fatturazione
+
+class ClientiController < ApplicationController
+  # Utilizza il layout 'admin' per tutte le viste
+  layout 'admin'
+  
+  # Richiede che l'utente sia amministratore o operatore per accedere a qualsiasi azione
+  # A differenza delle fatture, che sono gestibili solo dagli amministratori,
+  # i clienti possono essere gestiti anche dagli operatori
+  before_filter :require_admin_or_operator
+
+  # Configurazione di ActiveScaffold per la gestione dei clienti
+  active_scaffold :cliente do |config|
+    # Definizione delle colonne da visualizzare nell'interfaccia
+    columns = [
+      :codice,                # Codice identificativo del cliente
+      :nome,                  # Nome principale del cliente
+      :campioni,              # Campioni associati al cliente
+      :rapporti_per_anno,     # Rapporti raggruppati per anno
+      :fatture,               # Fatture associate al cliente
+      :denominazione,         # Denominazione completa/ragione sociale
+      :partita_iva,           # Partita IVA
+      :codice_fiscale,        # Codice fiscale
+      :indirizzo,             # Indirizzo principale
+      :comune,                # Comune dell'indirizzo principale
+      :cap,                   # CAP dell'indirizzo principale
+      :provincia,             # Provincia dell'indirizzo principale
+      :tel,                   # Numero di telefono
+      :fax,                   # Numero di fax
+      :email_per_notifiche,   # Email per l'invio delle notifiche
+      :note,                  # Note interne
+      :cellulare_per_sms,     # Cellulare per invio SMS
+      :titolare_cellulare,    # Nome del titolare del primo cellulare
+      :cellulare_per_sms_2,   # Secondo cellulare per invio SMS
+      :titolare_cellulare_2,  # Nome del titolare del secondo cellulare
+      :fatt_indirizzo,        # Indirizzo di fatturazione (se diverso dall'indirizzo principale)
+      :fatt_comune,           # Comune dell'indirizzo di fatturazione
+      :fatt_cap,              # CAP dell'indirizzo di fatturazione
+      :fatt_provincia,        # Provincia dell'indirizzo di fatturazione
+    ]
+
+    # Configurazione delle colonne
+    config.columns = columns
+    
+    # Descrizioni dei campi mostrate come tooltip nell'interfaccia
+    config.columns[:email_per_notifiche].description = "Più indirizzi email devono essere separati da una virgola"
+    config.columns[:fatt_indirizzo].description = "Compilare i seguenti campi solo se diversi dall'indirizzo principale"
+    
+    # Configurazione delle colonne da visualizzare nella lista (vista principale)
+    # La lista mostra un sottoinsieme di campi per maggiore leggibilità
+    config.list.columns = columns - [
+      :indirizzo, :denominazione, :partita_iva, :codice_fiscale, :provincia, 
+      :cap, :note, :fax, :cellulare_per_sms, :titolare_cellulare, 
+      :cellulare_per_sms_2, :titolare_cellulare_2, :fatt_indirizzo, 
+      :fatt_comune, :fatt_cap, :fatt_provincia
+    ]
+    
+    # Esclusione di campi specifici dalle viste di creazione e aggiornamento
+    # I campi relazionali (campioni, rapporti, fatture) sono gestiti separatamente
+    # e non sono modificabili direttamente nella scheda del cliente
+    config.create.columns.exclude :campioni, :rapporti_per_anno, :fatture, :fatture_per_anno
+    config.update.columns.exclude :campioni, :rapporti_per_anno, :fatture, :fatture_per_anno
+    
+    # Etichette personalizzate per le colonne dell'indirizzo di fatturazione
+    # Il prefisso [fattura] aiuta a distinguere questi campi dai corrispondenti dell'indirizzo principale
+    config.columns[:fatt_indirizzo].label = '[fattura] Indirizzo'
+    config.columns[:fatt_comune].label = '[fattura] Comune'
+    config.columns[:fatt_cap].label = '[fattura] Cap'
+    config.columns[:fatt_provincia].label = '[fattura] Provincia'
+    
+    # Configurazione della paginazione e dell'ordinamento
+    config.list.per_page = 50               # Mostra 50 clienti per pagina
+    config.list.sorting = {:nome => :asc}   # Ordina i clienti per nome in ordine alfabetico
+    
+    # Sostituisce la ricerca tradizionale con la ricerca live (durante la digitazione)
+    config.actions.swap :search, :live_search
+  end
+
+  # Le azioni standard (index, show, new, edit, create, update, destroy)
+  # sono gestite automaticamente da ActiveScaffold e non richiedono
+  # implementazioni personalizzate in questo caso
+end 

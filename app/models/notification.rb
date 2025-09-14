@@ -14,7 +14,7 @@ class Notification < ActionMailer::Base
  # da http://www.devarticles.com/c/a/Ruby-on-Rails/Error-Checking-and-Debugging-with-Ruby-on-Rails/
  # excerpted from chapter 15 of the Ruby Cookbook, written by Lucas Carlson and Leonard Richardson (O'Reilly, 2006; ISBN: 0596523696)
   def error_message(exception, trace, session, params, env, sent_on = Time.now)
-      @recipients    = 'francesco@buenaventura.it'
+      @recipients    = 'info@centrobarbera.it'
       @from          = 'error@centroenowine.dyndns.org'
       @subject       = "Errore su centroenowine.dyndns.org"#:  #{request.env['REQUEST_URI']}"
       # { env['REQUEST_URI']}"

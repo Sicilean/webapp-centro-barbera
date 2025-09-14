@@ -1,0 +1,92 @@
+# Modello Campione
+# Rappresenta un campione fisico inviato dal cliente per le analisi
+# Ogni campione è identificato da un numero progressivo e un anno di riferimento
+class Campione < ActiveRecord::Base
+
+  # Relazioni
+  # Un campione appartiene a un cliente specifico
+  belongs_to :cliente
+
+  # Un campione può avere molti rapporti di prova associati
+  # Se il campione viene eliminato, anche i relativi rapporti verranno eliminati
+  has_many :rapporti, :dependent => :destroy
+  
+  # Relazione indiretta con le tipologie di analisi attraverso i rapporti
+  has_many :tipologie, :through => :rapporti
+
+  # Callback che verifica se è possibile eliminare il campione
+  # Un campione può essere eliminato solo se non ha rapporti associati
+  before_destroy :cancella_pure_dato_che_non_e_utilizzato
+
+  # Validazioni
+  # Cliente, data di ricezione e anno sono obbligatori
+  validates_presence_of :cliente, :data, :anno
+  
+  # Il numero del campione (se presente) deve essere unico per anno
+  # Un campione può essere registrato senza numero e assegnato successivamente
+  validates_uniqueness_of :numero,
+                          :allow_nil => true,
+                          :scope => 'anno',
+                          :message => "è già in uso per l'anno selezionato"
+
+  # Il numero del campione deve essere compreso tra 1 e 10000
+  validates_inclusion_of  :numero,
+                          :in => 1..10000,
+                          :allow_nil => true,
+                          :message => 'deve essere compreso tra 1 e 9999 (o assente)'
+
+  # Restituisce una rappresentazione testuale del campione
+  # Formato: "R.c. [numero]/[anno] - [nome cliente]"
+  # Se il numero non è stato ancora assegnato, mostra "R.c. ??/[anno]"
+  def to_label
+    if cliente.nil? 
+      nome_cliente = ''
+    else
+      nome_cliente = cliente.to_label
+    end
+    if self.numero.nil?
+      return "R.c. ??/#{anno} - #{nome_cliente}"
+    else
+      return "R.c. #{numero}/#{anno} - #{nome_cliente}"
+    end
+  end
+
+  # Verifica se è possibile cancellare il campione
+  # Restituisce true se il campione può essere cancellato (non utilizzato)
+  # Solleva un'eccezione se il campione ha rapporti associati
+  def cancella_pure_dato_che_non_e_utilizzato
+    if !self.utilizzato?
+      return true
+    else
+       raise "Non posso cancellare una Campione se utilizzato"
+       logger.info("Tentativo di cancellazione di campione utilizzato")
+      return false
+    end
+  end
+
+  # Verifica se il campione è utilizzato (ha rapporti associati)
+  # Restituisce true se il campione ha almeno un rapporto
+  def utilizzato?
+    if self.rapporti.empty?
+      return false
+    else
+      return true
+    end
+  end
+
+  # Verifica se il campione è fatturato
+  # Un campione è considerato fatturato se almeno uno dei suoi rapporti è stato fatturato
+  # Utile per bloccare modifiche ai dati di campioni già fatturati
+  def fatturato?
+    numero_fatture = 0
+    self.rapporti.each do |rapporto|
+      numero_fatture += 1 if rapporto.fattura
+    end
+    return numero_fatture > 0
+  end
+
+  # Validazione personalizzata per impedire la modifica di campioni già fatturati
+  def validate
+    errors.add "Errore:", "Campione non modificabile in quanto legato ad un rapporto già fatturato" if self.fatturato?
+  end
+end 

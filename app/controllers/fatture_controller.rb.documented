@@ -1,0 +1,211 @@
+# Documentazione del Controller Fatture
+# =====================================
+#
+# Il controller Fatture gestisce tutte le operazioni relative alle fatture generate 
+# dal sistema per i clienti. Le fatture raggruppano più rapporti di prova di un cliente
+# in un periodo specifico, calcolando automaticamente prezzi, sconti e imposte.
+#
+# Il controller permette di:
+# - Creare, visualizzare, modificare ed eliminare fatture
+# - Generare PDF delle fatture
+# - Gestire lo stato di pagamento delle fatture
+# - Visualizzare i rapporti associati a una fattura
+# - Calcolare automaticamente importi, sconti e totali
+
+class FattureController < ApplicationController
+  
+  # Utilizza il layout 'admin' per tutte le viste
+  layout 'admin'
+  
+  # Richiede che l'utente sia amministratore per accedere a qualsiasi azione
+  # A differenza del RapportiController che permette anche agli operatori,
+  # le fatture sono gestibili solo dagli amministratori
+  before_filter :require_admin
+
+  # Configurazione di ActiveScaffold per la gestione delle fatture
+  active_scaffold :fattura do |config|
+    # Descrizioni dei campi mostrate come tooltip nell'interfaccia
+    columns[:percentuale_sconto].description = "inserire il valore percentuale: da 0 a 100"
+    columns[:usa_indirizzo_di_fatturazione].description = "Disattivare <i>solo</i> se l'indirizzo di fatturazione è presente, <i>ma</i> si vuole fatturare all'indirizzo principale"
+    
+    # Configurazione dell'ordinamento quando si clicca sulla colonna numero fattura
+    columns[:numero].sort_by :sql => 'anno ASC, numero'
+    
+    # Configurazione dei link per la visualizzazione nidificata dei rapporti
+    columns[:rapporti].set_link('nested', :parameters => {:associations => :rapporti})
+
+    # Definizione delle colonne da visualizzare nell'interfaccia
+    columns = [
+                :dati_fattura_link,        # Link alla pagina dei dati della fattura
+                :stampa_fattura_link,      # Link alla stampa della fattura
+                :rigenera_pdf_link,        # Link per rigenerare il PDF
+                :cliente,                  # Cliente associato
+                :numero,                   # Numero della fattura
+                :anno,                     # Anno della fattura
+                :data_emissione,           # Data di emissione
+                :pagata,                   # Stato di pagamento
+                :totale_analisi,           # Totale analisi (importante per il refresh dell'interfaccia)
+                :rapporti,                 # Rapporti associati
+                :data_inizio,              # Data inizio periodo
+                :data_fine,                # Data fine periodo
+                :totale,                   # Importo totale
+                :data_pagamento,           # Data di pagamento
+                :usa_indirizzo_di_fatturazione, # Flag per l'uso dell'indirizzo di fatturazione
+                :note,                     # Note interne
+               ]
+               
+    config.columns = columns
+    
+    # Configurazione delle colonne da visualizzare nella lista (vista principale)
+    config.list.columns = columns - [:usa_indirizzo_di_fatturazione]
+    
+    # Esclude colonne specifiche dalle viste di creazione, aggiornamento e sotto-form
+    config.create.columns.exclude :rapporti, :stampa_fattura_link, :dati_fattura_link, :rigenera_pdf_link, 
+                                 :totale_analisi, :pagata, :data_pagamento, :totale, :percentuale_sconto, :prove_totali
+    config.update.columns.exclude :rapporti, :stampa_fattura_link, :dati_fattura_link, :rigenera_pdf_link, 
+                                 :totale_analisi, :pagata, :prove_totali, :totale, :percentuale_sconto
+    config.subform.columns.exclude :rapporti, :stampa_fattura_link, :dati_fattura_link, :rigenera_pdf_link, 
+                                  :totale_analisi, :pagata, :prove_totali, :totale, :percentuale_sconto
+    
+    # Etichette personalizzate per le colonne
+    config.columns[:numero].label = 'Fatt n.'
+    config.columns[:anno].label = 'anno'
+    
+    # Configurazione della paginazione e dell'interfaccia UI
+    list.per_page = 50
+    config.columns[:cliente].form_ui = :select
+    
+    # Configurazione dell'ordinamento predefinito
+    list.sorting = [{:data_emissione => :desc}]
+  end
+
+  # Definisce le condizioni per la raccolta di fatture visualizzate
+  # Permette di filtrare le fatture per ID specifico o per cliente e anno
+  def conditions_for_collection
+    # Filtro per ID specifico della fattura
+    if params[:fattura_id]
+      fattura = Fattura.find_by_id params[:fattura_id].to_i
+      return ['`fatture`.`id` IN (?)', [fattura.id]]
+    end
+    
+    # Filtro per cliente e anno
+    if params[:cliente_id]
+      cliente = Cliente.find_by_id(params[:cliente_id].to_i)
+      if cliente.nil?
+        flash[:error] = 'Attenzione, stai filtrando fatture su un cliente inesistente'
+        return false
+      else
+        if params[:anno].nil?
+          # Mostra tutte le fatture del cliente
+          flash[:notice] = "(filtrato) Elenco fatture cliente: <strong>#{cliente.nome}</strong>"
+          fatture_da_mostrare = cliente.fatture.map {|fattura| fattura.id}
+        else
+          # Mostra solo le fatture del cliente per l'anno specificato
+          flash[:notice] = "(filtrato) Elenco fatture cliente: <strong>#{cliente.nome}</strong> per anno: <strong>#{params[:anno]}</strong>"
+          fatture_da_mostrare = cliente.fatture.map {|fattura| fattura.id if (fattura.anno == params[:anno].to_i)}
+        end
+        return ['`fatture`.`id` IN (?)', fatture_da_mostrare]
+      end
+    end
+  end
+
+  # Genera la vista per la fattura in formato HTML o PDF
+  # Calcola e organizza i dati necessari per visualizzare una fattura
+  def fattura_per_pdf
+    # Supporta la stampa di un modello vuoto (per prestampati)
+    if params[:stampa_modello_vuoto]=='1'
+      @style_nascosto_se_stampa_modello_vuoto = ' visibility:hidden; '
+    else
+      @style_nascosto_se_stampa_modello_vuoto = ' visibility:visible; '
+    end
+    
+    @fattura = Fattura.find(params[:id])
+    
+    # Genera il render solo se non chiamato da 'crea_pdf'
+    unless @codice_senza_render
+      # Preparazione dei dati per la fattura
+      # Organizza i rapporti in array di array per il calcolo dei prezzi e quantità
+      # Struttura: [tipologia_id, prezzo_rapporto, prova1_id, prova2_id, ...]
+      # Serve per raggruppare i rapporti per tipologia e calcolare i totali
+      @array_di_array_tipologie_id_prove_id = Array.new
+      @fattura.rapporti_ordinati_per_nome_tipologia.each do |rapporto|
+        if rapporto.prove_totali.empty?
+          # Caso raro: rapporto senza prove
+          @array_di_array_tipologie_id_prove_id << [rapporto.tipologia_id]+[rapporto.prezzo_totale]
+        else
+          # Raggruppa le prove per tipologia con relativi prezzi
+          @array_di_array_tipologie_id_prove_id << [rapporto.tipologia_id]+[rapporto.prezzo_totale]+rapporto.prove_totali.sort_by{|prova| prova.id}.map{|prova| prova.id}
+        end
+      end
+      
+      # Visualizzazione in formato HTML o PDF
+      respond_to do |format|
+        format.html {render :layout => 'fattura'}
+        format.pdf do
+          render :pdf => "fattura_per_pdf", :stylesheets => ["fattura", "prince"], :layout => "fattura"
+        end
+      end
+    end
+  end
+
+  # Genera e salva un file PDF della fattura
+  # Verifica che la fattura sia completa prima di procedere
+  def crea_pdf
+    fattura = Fattura.find(params[:id])
+    
+    # Verifica che la fattura sia completa e abbia le date di periodo specificate
+    if !fattura.completa?
+      flash[:error] = 'La fattura non è completa.'
+      redirect_to :controller => :fatture
+    elsif fattura.data_inizio.nil? || fattura.data_fine.nil?
+      flash[:error] = 'Data esecuzione rapporti mancante'
+      redirect_to :controller => :fatture, :action => :edit, :id => fattura.id
+    else
+      # Preparazione dei dati per la fattura (come in fattura_per_pdf)
+      array_di_array_tipologie_id_prove_id = Array.new
+      fattura.rapporti_ordinati_per_nome_tipologia.each do |rapporto|
+        if rapporto.prove_totali.empty?
+          array_di_array_tipologie_id_prove_id << [rapporto.tipologia_id]+[rapporto.prezzo_totale]
+        else
+          array_di_array_tipologie_id_prove_id << [rapporto.tipologia_id]+[rapporto.prezzo_totale]+rapporto.prove_totali.sort_by{|prova| prova.id}.map{|prova| prova.id}
+        end
+      end
+      
+      # Se il PDF esiste già, lo elimina
+      fattura.pdf_elimina if fattura.pdf_esiste?
+      
+      # Genera il PDF utilizzando l'azione fattura_per_pdf ma senza render
+      @codice_senza_render = true
+      fattura_per_pdf
+      fattura_per_pdf = make_pdf(:template => "fatture/fattura_per_pdf.erb", :pdf => "fattura", :stylesheets => ["fattura", "prince"], :layout => "fattura")
+      out = fattura_per_pdf
+      
+      # Salva il file PDF nella posizione corretta
+      nome_file = fattura.nome_file_pdf_della_fattura_con_path_assoluto
+      File.open(nome_file, 'w') do |f|
+        f.write(out)
+      end
+      
+      flash[:error] = 'Pdf creato'
+      redirect_to :controller => :fatture
+    end
+  end
+
+  # Mostra un PDF esistente di una fattura
+  # Se il file non esiste, solleva un errore
+  def mostra_pdf
+    fattura = Fattura.find(params[:id])
+    nome_file = fattura.nome_file_pdf_della_fattura_con_path_assoluto
+    
+    if File.exist?(nome_file)
+      file_data = IO.read(nome_file)
+      send_data(
+        file_data,
+        :filename => nome_file,
+        :type => 'application/pdf'
+      )
+    else
+      raise "Errore: stai tentando di visualizzare un PDF inesistente (fattura n.#{fattura.numero}, id=#{fattura.id}). Avvertire Francesco"
+    end
+  end
+end 

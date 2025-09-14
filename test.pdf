@@ -1,0 +1,71 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+    <title>Barbera: new</title>
+    <link href="/stylesheets/main.css?1746543292" media="all" rel="stylesheet" type="text/css" />
+    <script src="/javascripts/prototype.js?1746543290" type="text/javascript"></script>
+<script src="/javascripts/effects.js?1746543290" type="text/javascript"></script>
+<script src="/javascripts/dragdrop.js?1746543290" type="text/javascript"></script>
+<script src="/javascripts/controls.js?1746543290" type="text/javascript"></script>
+<script src="/javascripts/application.js?1746543290" type="text/javascript"></script>
+    <script src="/javascripts/active_scaffold/default/active_scaffold.js?1750867067" type="text/javascript"></script>
+<script src="/javascripts/active_scaffold/default/dhtml_history.js?1750867067" type="text/javascript"></script>
+<script src="/javascripts/active_scaffold/default/form_enhancements.js?1750867067" type="text/javascript"></script>
+<script src="/javascripts/active_scaffold/default/rico_corner.js?1750867067" type="text/javascript"></script>
+<link href="/stylesheets/active_scaffold/default/stylesheet.css?1750867067" media="screen" rel="stylesheet" type="text/css" />
+<!--[if IE]><link href="/stylesheets/active_scaffold/default/stylesheet-ie.css?1750867067" media="screen" rel="stylesheet" type="text/css" /><![endif]-->
+
+  </head>
+  <body>
+    <div id="container">
+      <div id ="testata" >
+        <table style="width: 100%; text-align: left;" border="0" cellpadding="2" cellspacing="2">
+          <tbody>
+            <tr>
+              <td style="vertical-align: top; width: 80px">
+              <a href="http://localhost:3000/"><img alt="Logo" border="0" src="/images/logo.gif?1746543294" /></a>
+
+              </td>
+              <td style="vertical-align: top;">
+                <h1>Centro Enochimico Barbera</h1>
+              </td>
+              <td style="vertical-align: top; text-align: right;">
+                
+                 &nbsp;&nbsp; <a href="/login">Entra</a>
+                 &nbsp;&nbsp; <a href="/password_resets/new">Ho dimenticato la password</a>
+                
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <br/>
+      </div> <!-- testata -->
+      <div id="corpo"
+        <p style="color: red"></p>
+        <p style="color: green">Ruolo insufficiente</p>
+                
+
+        
+
+<form action="/user_sessions" class="new_user_session" id="new_user_session" method="post">
+  
+  <p>
+    <label for="user_session_email">email</label><br />
+    <input id="user_session_email" name="user_session[email]" size="30" type="text" />
+  </p>
+  <p>
+    <label for="user_session_password">password</label><br />
+    <input id="user_session_password" name="user_session[password]" size="30" type="password" />
+  </p>
+  <p>
+    <input id="user_session_submit" name="commit" type="submit" value="Entra" />
+  </p>
+</form>
+
+      </div>
+    </div> <!-- container -->
+  </body>
+</html>

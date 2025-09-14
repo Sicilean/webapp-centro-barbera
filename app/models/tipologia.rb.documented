@@ -1,0 +1,123 @@
+# Modello Tipologia
+# Rappresenta un insieme predefinito di prove (analisi) che possono essere eseguite su un campione
+# Può avere un prezzo forfettario o derivare il prezzo dalla somma delle prove associate
+class Tipologia < ActiveRecord::Base
+
+  # Relazioni
+  # Una tipologia appartiene a una matrice (tipo di materiale su cui si eseguono le analisi)
+  belongs_to :matrice
+
+  # Una tipologia può avere molti rapporti di prova associati
+  # Se la tipologia viene eliminata, anche i relativi rapporti verranno eliminati
+  has_many :rapporti, :dependent => :destroy
+  
+  # Relazione indiretta con i campioni attraverso i rapporti
+  has_many :campioni, :through => :rapporti
+
+  # Associazione con le prove tramite prova_tipologia_items
+  # Ordinate per position per mantenere un ordine specifico di visualizzazione
+  has_many :prova_tipologia_items, :dependent => :destroy, :order => 'position ASC'
+  has_many :prove, :through => :prova_tipologia_items
+
+  # Verifica se la tipologia può essere eliminata (non deve essere utilizzata in rapporti)
+  before_destroy :cancella_pure_dato_che_non_e_utilizzata
+  
+  # Logging dopo l'eliminazione di una tipologia
+  after_destroy { |record| logger.info("Tipologia '#{record.nome}' (id:#{record.id}) eliminata.") }
+
+  # Validazioni
+  # Matrice e nome sono obbligatori
+  validates_presence_of :matrice, :nome
+  
+  # Il nome deve essere unico per ogni matrice (case insensitive)
+  validates_uniqueness_of :nome, :case_sensitive => false, :scope => :matrice_id
+  
+  # Se la tipologia è a forfeit, il prezzo deve essere maggiore o uguale a zero
+  validates_numericality_of :prezzo, :greater_than_or_equal_to => 0, :if => :forfeit,
+                           :message => 'deve essere presente se per Tipologie a forfeit'
+  
+  # Il prezzo deve essere minore di 1000€ (memorizzato come centesimi)
+  validates_numericality_of :prezzo, :if => :forfeit, :less_than => 100*1000,
+                           :message => 'deve essere minore di 1000€'
+  
+  # Se la tipologia non è a forfeit, il prezzo deve essere zero
+  # (in questo caso il prezzo totale sarà la somma dei prezzi delle singole prove)
+  validates_numericality_of :prezzo, :equal_to => 0, :unless => :forfeit,
+                           :message => 'deve essere assente per Tipologie non a forfeit'
+
+  # Gestione del prezzo forfettario della tipologia
+  # Converte il prezzo da euro a centesimi (per il salvataggio nel DB)
+  def prezzo=(euro)
+    write_attribute(:prezzo, euro.to_f * 100) # we store cents in the database
+  end
+  
+  # Converte il prezzo da centesimi a euro (per la visualizzazione)
+  def prezzo
+    read_attribute(:prezzo) / 100
+  end
+
+  # Formatta il nome della tipologia: rimuove spazi iniziali/finali e mette la prima lettera in maiuscolo
+  def nome=(testo)
+    unless testo.nil?
+      testo = testo.to_s.strip
+      testo = (testo.slice(0,1)).upcase+(testo.slice(1..-1)).to_s
+    end
+    write_attribute(:nome, testo)
+  end
+
+  # Restituisce una rappresentazione testuale della tipologia
+  # Usato nelle UI per visualizzare solo il nome della tipologia
+  def to_label
+    "#{nome}"
+  end
+
+  # Verifica se è possibile eliminare la tipologia
+  # Restituisce true se la tipologia può essere cancellata (non utilizzata)
+  # Solleva un'eccezione se la tipologia è utilizzata in rapporti
+  def cancella_pure_dato_che_non_e_utilizzata
+    if !self.utilizzata?
+      return true
+    else
+       raise "Non posso cancellare una tipologia se questa viene utilizzata"
+      return false
+    end
+  end
+
+  # Verifica se la tipologia è utilizzata (ha rapporti associati)
+  # Restituisce true se la tipologia ha almeno un rapporto
+  def utilizzata?
+    if self.rapporti.empty?
+      return false
+    else
+      return true
+    end
+  end
+
+  # Restituisce le prove associate alla tipologia, ordinate per position
+  # Necessario perché self.prove non mantiene l'ordinamento di prova_tipologia_items
+  def prove_ordinate
+    prove_ordinate = Array.new
+    self.prova_tipologia_items.each {|prova_tipologia_item| prove_ordinate << prova_tipologia_item.prova}
+    return prove_ordinate
+  end
+
+  # Calcola il prezzo automatico della tipologia
+  # Se è a forfeit, restituisce il prezzo forfettario
+  # Altrimenti, somma i prezzi di tutte le prove associate
+  def prezzo_automatico
+    risultato = 0
+    if self.forfeit
+      risultato = self.prezzo
+    else
+      self.prove.each do |prova|
+        risultato += prova.prezzo
+      end
+    end
+    return risultato
+  end
+
+  # Validazione personalizzata per impedire la modifica di tipologie già utilizzate in rapporti
+  def validate
+    errors.add "Errore:", "Tipologia non modificabile in quanto risultà già utilizzata" if self.utilizzata?
+  end
+end 

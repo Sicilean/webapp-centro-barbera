@@ -5,19 +5,25 @@
   <head>
     <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
-
-
     <% if params[:format] == 'pdf' %>
       <title>Rapporto di prova <%= "n. #{@rapporto.numero} " unless @rapporto.numero.blank? %>- <%= @rapporto.campione.cliente.nome %></title>
       <meta name="author" content="Lab. Barbera"/>
       <meta name="subject" content="Rapporto di prova "/>
       <meta name="keywords" content="PDF, rapporto di prova"/>
+      
+      <!-- CSS inline per PDF con percorsi assoluti -->
+      <style type="text/css">
+        <%= File.read(Rails.root.join('public', 'stylesheets', 'rdp.css')) rescue "" %>
+        <%= File.read(Rails.root.join('public', 'stylesheets', 'prince.css')) rescue "" %>
+      </style>
+    <% else %>
+      <!-- CSS per il browser normale -->
+      <%= stylesheet_link_tag "rdp", :media => "all" %>
+      <%= stylesheet_link_tag "prince", :media => "all" %>
     <% end %>
-    <%= stylesheet_link_tag "rdp", :media => "all" %>
-
 
   </head>
   <body>
-        <%= yield %>
+    <%= yield %>
   </body>
 </html>

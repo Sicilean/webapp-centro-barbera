@@ -6,8 +6,9 @@ development:
   pool: 5
   username: root
   password: password
-  host: db
+  host: 172.19.0.2
   port: 3306
+  socket: ~
 
 production:
   adapter: mysql
@@ -17,6 +18,7 @@ production:
   pool: 5
   username: root
   password: password
-  host: db
+  host: 172.19.0.2
   port: 3306
+  socket: ~
 

@@ -204,7 +204,7 @@ CAMPIONE_RDP_ANNO_TYPES = CAMPIONE_RC_ANNO_TYPES
 RAPPORTO_STATUS_TYPES = [
   # nb, mettere per primo il valore che viene assegnato alla creazione del rapporto
   ['in lavorazione', 'in lavorazione'],
-  ['completato', 'completato'],
+  ['completo', 'completo'],
   ]
 
 RAPPORTO_STATUS_DEFAULT = RAPPORTO_STATUS_TYPES[0][1]

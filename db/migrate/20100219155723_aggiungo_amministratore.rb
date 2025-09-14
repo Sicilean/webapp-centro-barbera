@@ -1,7 +1,7 @@
 class AggiungoAmministratore < ActiveRecord::Migration
   def self.up
     User.create(        :nome => 'Francesco Ronzon',
-                        :email =>"francesco@buenaventura.it",
+                        :email =>"info@centrobarbera.it",
                         :password => 'barbera',
                         :password_confirmation => 'barbera',
                         :role => 10)

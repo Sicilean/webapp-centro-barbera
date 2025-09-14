@@ -1,0 +1,52 @@
+# Documentazione dello Script genera_pdf.rb
+# ======================================
+#
+# Questo script è utilizzato per generare i file PDF dei rapporti di prova.
+# Esegue un ciclo su un insieme di rapporti e richiama l'azione crea_pdf del controller
+# RapportiController per ogni rapporto che soddisfa determinate condizioni.
+#
+# Il script può essere eseguito dall'ambiente di sviluppo o di produzione usando
+# la console di Rails. È particolarmente utile per:
+# - Rigenerare PDF per un gruppo di rapporti
+# - Creare PDF mancanti in batch
+# - Testare la funzionalità di generazione PDF
+#
+# ISTRUZIONI PER L'ESECUZIONE:
+# ----------------------------
+# 1. Aprire la console Rails:
+#    In ambiente di sviluppo: 'script/console'
+#    In ambiente di produzione: 'script/console production'
+#
+# 2. Caricare lo script:
+#    Sviluppo locale: load '/path/to/genera_pdf.rb'
+#    Server di produzione: load '~/rails_work/barbera/genera_pdf.rb'
+#
+# NOTE DI SICUREZZA:
+# -----------------
+# - Lo script accede al server web tramite HTTP locale
+# - In produzione, assicurarsi che il server web sia configurato correttamente
+# - Considerare l'impostazione del port forwarding dal router dalla porta 8090 alla porta 80
+#   per prevenire accessi non autorizzati durante l'esecuzione
+
+# Recupera tutti i rapporti dal database
+rapporti = Rapporto.all
+
+# Esegue un ciclo su ogni rapporto
+rapporti.each do |rapporto|
+  # Verifica che il rapporto sia completo e abbia un numero e un anno assegnati
+  if rapporto.completo? && !rapporto.numero.blank? && !rapporto.anno.blank?
+    # Filtra solo i rapporti con numeri compresi in un intervallo specifico (1051-1195)
+    # Questo filtro può essere modificato o rimosso in base alle necessità
+    if rapporto.numero >= 1051 && rapporto.numero <= 1195
+      # Effettua una richiesta HTTP al server locale per generare il PDF
+      # L'azione crea_pdf del controller rapporti si occuperà di generare
+      # effettivamente il file PDF e di salvarlo
+      
+      # Per ambiente di sviluppo (porta 3000):
+      # html = Net::HTTP.get(URI.parse("http://localhost:3000/rapporti/crea_pdf/#{rapporto.id}"))
+      
+      # Per ambiente di produzione (porta 80):
+      html = Net::HTTP.get(URI.parse("http://localhost/rapporti/crea_pdf/#{rapporto.id}"))
+    end
+  end
+end 

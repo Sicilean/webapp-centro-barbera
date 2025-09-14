@@ -1,0 +1,66 @@
+# Documentazione del Modello User
+# ============================
+#
+# Il modello User rappresenta gli utenti del sistema Barbera. Gli utenti possono avere
+# ruoli diversi (amministratori, operatori, clienti) e diversi livelli di accesso al sistema.
+# Il modello utilizza la gemma Authlogic per la gestione dell'autenticazione.
+#
+# Un utente può essere associato a un cliente specifico (nel caso di utenti di tipo cliente),
+# mentre gli amministratori e gli operatori hanno accesso a funzionalità di gestione del sistema.
+
+class User < ActiveRecord::Base
+
+  # Relazioni
+  belongs_to :cliente  # Opzionale, solo per utenti di tipo cliente
+
+  # Configurazione Authlogic per l'autenticazione
+  acts_as_authentic do |c|
+    # Configura il campo di login come l'email
+    c.login_field = :email
+  end
+
+  # Validazioni
+  validates_presence_of :nome  # Il nome è obbligatorio
+
+  # Metodo per inviare le istruzioni di reset della password
+  # Richiamato quando un utente richiede di reimpostare la password
+  def deliver_password_reset_instructions!
+    # Reimposta il token (generato da Authlogic)
+    reset_perishable_token!
+    # Invia l'email con le istruzioni di reset
+    Notifier.deliver_password_reset_instructions(self)
+  end
+
+  # Metodo per verificare se l'utente è un amministratore (role=10)
+  def is_admin?
+    role == 10
+  end
+
+  # Metodo per verificare se l'utente è un operatore (role=20)
+  def is_operator?
+    role == 20
+  end
+
+  # Metodo per verificare se l'utente è un amministratore o un operatore
+  # Usato per controllare l'accesso a funzionalità riservate al personale interno
+  def is_admin_or_operator?
+    is_admin? || is_operator?
+  end
+
+  # Metodo per verificare se l'utente è un cliente (role=30)
+  def is_cliente?
+    role == 30
+  end
+
+  # Metodo che restituisce una rappresentazione testuale del ruolo dell'utente
+  # Si basa sulla costante USER_ROLE_TYPES definita nell'applicazione
+  def role_in_words
+    risultato = ""
+    USER_ROLE_TYPES.each do |x|
+      if role == x[1]
+        risultato = x[0]
+      end
+    end
+    risultato.capitalize
+  end
+end 

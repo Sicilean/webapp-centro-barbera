@@ -1,4 +1,5 @@
 <% scope ||= nil %>
+<% if column %>
 <dl>
   <dt>
     <label for="<%= active_scaffold_input_options(column, scope)[:id] %>"><%= column.label %></label>
@@ -13,3 +14,4 @@
     <% end -%>
   </dd>
 </dl>
+<% end %>

@@ -24,10 +24,13 @@ class UserSessionsController < ApplicationController
   end
 
   def destroy
-    @user_session = UserSession.find(params[:id])
-    @user_session.destroy
-    flash[:notice] = 'Uscito con successo.'
-    redirect_back_or_default root_url
+    if current_user_session
+      current_user_session.destroy
+      flash[:notice] = 'Uscito con successo.'
+    else
+      flash[:notice] = 'Nessuna sessione attiva da chiudere.'
+    end
+    redirect_to root_url
   end
 
 end

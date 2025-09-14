@@ -1,0 +1,111 @@
+# ANALISI FUNZIONALE BARBERA SOFTWARE
+
+## Panoramica
+Barbera Software è un sistema gestionale specializzato per laboratori di analisi ambientali, sviluppato per il Centro Barbera. L'applicazione permette di gestire il processo completo delle analisi di laboratorio, dalla registrazione dei campioni fino alla fatturazione, con particolare attenzione alla generazione di rapporti di prova (RdP) conformi agli standard del settore.
+
+## Architettura Tecnica
+- **Framework**: Ruby on Rails 2.3.8
+- **Database**: MySQL 5.5
+- **Ambiente**: Containerizzato con Docker
+- **UI**: Interfaccia web HTML/CSS
+- **PDF**: Generazione rapporti con wkhtmltopdf
+- **Autenticazione**: Sistema proprietario basato su Authlogic
+
+## Componenti Principali
+
+### 1. Gestione Clienti
+- Registrazione completa anagrafica clienti
+- Gestione indirizzi di fatturazione separati
+- Tracciamento contatti (email, telefono, cellulare)
+- Sistema di notifiche email/SMS
+
+### 2. Gestione Campioni
+- Registrazione campioni con numerazione automatica
+- Associazione campioni a clienti
+- Tracciamento dati campionamento (luogo, data, tipo)
+- Gestione informazioni agricole (coltura, fase, ettari)
+- Mappatura catastale (fogli, particelle)
+
+### 3. Gestione Prove Analitiche
+- Catalogo parametri analizzabili
+- Definizione metodiche di prova
+- Unità di misura personalizzabili
+- Associazione prove a matrici ambientali
+- Prezzi configurabili per singola prova
+
+### 4. Rapporti di Prova (RdP)
+- Creazione guidata RdP per campione
+- Numerazione automatica per anno
+- Selezione tipologie di analisi
+- Gestione supplementi a rapporti esistenti
+- Inserimento risultati analitici
+- Calcoli automatici derivati (variabili di tipo funzione)
+- Stati di avanzamento (in lavorazione, completo)
+- Stampa RdP in formato PDF professionale
+- Invio automatico a clienti via email/SMS
+
+### 5. Fatturazione
+- Generazione fatture da uno o più rapporti
+- Numerazione progressiva automatica
+- Calcolo automatico importi
+- Gestione sconti
+- Stampa fatture in formato PDF
+- Tracciamento pagamenti
+
+### 6. Dashboard e Reportistica
+- Visualizzazione rapporti in lavorazione
+- Monitoraggio scadenze
+- Riepilogo attività di laboratorio
+- Report sullo stato delle analisi
+
+## Flusso Operativo
+
+1. **Registrazione Campione**: Inserimento dati del campione associato a un cliente
+2. **Creazione Rapporto**: Selezione tipologia di analisi e prove da eseguire
+3. **Esecuzione Analisi**: Inserimento risultati per ogni parametro richiesto
+4. **Validazione Rapporto**: Controllo completezza e cambio stato a "completo"
+5. **Generazione PDF**: Creazione del documento ufficiale con firma
+6. **Consegna al Cliente**: Invio automatico via email o stampa fisica
+7. **Fatturazione**: Creazione fattura includendo i rapporti da fatturare
+
+## Specifiche Funzionali Dettagliate
+
+### Gestione Utenti e Sicurezza
+- Accesso con email e password
+- Ruoli differenziati (amministratore, operatore)
+- Tracciamento modifiche
+
+### Configurazione Sistema
+- Personalizzazione intestazioni e piè di pagina
+- Configurazione formati numerici
+- Gestione parametri di sistema
+
+### Gestione Dati Tecnici
+- Definizione tipologie di analisi
+- Creazione parametri analitici
+- Associazione parametri a tipologie
+- Formule di calcolo per parametri derivati
+
+### Processo di Analisi
+- Registrazione date inizio/fine analisi
+- Gestione note tecniche
+- Tracciamento conformità/non conformità
+- Validazione risultati
+
+### Reportistica
+- Generazione rapporti in formato PDF
+- Visualizzazione anteprima
+- Personalizzazione layout
+- Possibilità di stampare moduli vuoti
+
+### Integrazione e Comunicazione
+- Invio email automatico
+- Notifiche SMS
+- Archiviazione documenti generati
+
+## Limitazioni Tecniche
+- Architettura basata su tecnologie legacy (Ruby 1.8.7, Rails 2.3.8)
+- Interfaccia grafica datata
+- Esecuzione in ambiente locale containerizzato
+- Assenza di API moderne per integrazione con altri sistemi
+- Backup manuale dei dati 

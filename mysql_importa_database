@@ -1,3 +1,6 @@
 rake db:drop
 rake db:create
-mysql -uroot -p barbera_development < barbera_development_backup.sql
+# Import schema only
+mysql -uroot -p barbera_development < barbera_development_schema_only.sql
+# Initialize basic data
+rake db:seed

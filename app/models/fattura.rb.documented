@@ -1,0 +1,381 @@
+# Modello Fattura
+# Rappresenta una fattura emessa per uno o più rapporti di prova
+# Gestisce il ciclo di vita della fattura, i calcoli di prezzi, sconti, IVA e la generazione di PDF
+class Fattura < ActiveRecord::Base
+
+  # Relazioni
+  # Una fattura appartiene a un cliente
+  belongs_to :cliente
+
+  # Una fattura può avere molti rapporti associati
+  # NOTA: non usiamo :dependent => :destroy perché non vogliamo eliminare i rapporti quando eliminiamo la fattura
+  has_many :rapporti
+
+  # Dopo l'eliminazione di una fattura, rimuove i riferimenti nei rapporti e elimina i file PDF
+  def after_destroy
+    self.cancella_fattura_id_nei_rapporti
+    self.pdf_elimina_tutto_a_seguito_cancellazione_fattura
+  end
+
+  # Validazioni
+  # Cliente, numero, anno, data inizio e fine periodo sono obbligatori
+  validates_presence_of :cliente, :numero, :anno, :data_inizio, :data_fine
+
+  # Il numero fattura deve essere unico per anno
+  validates_uniqueness_of :numero,
+                          :allow_nil => false,
+                          :scope => 'anno',
+                          :message => "è già in uso per l'anno selezionato"
+
+  # Il numero fattura deve essere un intero positivo
+  validates_numericality_of :numero,
+                            :only_integer => true,
+                            :allow_nil => false
+
+  # Il numero fattura deve essere compreso tra 1 e 10000
+  validates_inclusion_of  :numero,
+                          :in => 1..10000,
+                          :allow_nil => false,
+                          :message => 'deve essere un numero intero e positivo'
+
+  # Lo sconto deve essere compreso tra 0 e 100 percento
+  validates_inclusion_of  :sconto,
+                          :in => 0..100,
+                          :allow_nil => false,
+                          :message => 'deve essere compreso tra 1 e 100'
+
+  # Dopo la creazione della fattura, aggiunge automaticamente i rapporti fatturabili del cliente nel periodo specificato
+  # e normalizza i prezzi per rapporti con stesse tipologie o prove
+  def after_create
+    # Aggiungo i rapporti di quel cliente, non ancora fatturati, con data tra inizio e fine
+    self.cliente.rapporti_fatturabili.each do |rapporto|
+      if  !rapporto.data_stampa.nil? &&
+                !self.data_inizio.nil? &&
+                !self.data_fine.nil? &&
+                rapporto.data_stampa >= self.data_inizio &&
+                rapporto.data_stampa <= self.data_fine
+        rapporto.update_attribute :fattura_id, self.id
+      end
+    end
+    
+    # Normalizza i prezzi per rapporti con stesse tipologie o prove
+    self.se_medesime_tipologie_hanno_prezzi_diversi_assegna_il_prezzo_di_listino
+    self.se_medesime_prove_hanno_prezzi_diversi_assegna_il_prezzo_di_listino
+  end
+
+  # Rimuove i riferimenti alla fattura da tutti i rapporti associati
+  # Usato quando viene eliminata una fattura, per "sganciare" i rapporti
+  def cancella_fattura_id_nei_rapporti
+    self.rapporti.each do |rapporto|
+      rapporto.update_attribute(:fattura_id, nil)
+    end
+  end
+
+  # Restituisce una rappresentazione testuale della fattura (numero/anno)
+  def to_label
+    "#{self.numero}/#{self.data_emissione.year}"
+  end
+
+  # Verifica se la fattura è stata pagata
+  # Una fattura è pagata se ha una data di pagamento
+  def pagata?
+    self.data_pagamento.nil? ? false : true
+  end
+
+  # Verifica se la fattura è completa (ha almeno un rapporto associato)
+  def completa?
+    if self.rapporti.size > 0
+      return true
+    else
+      return false
+    end
+  end
+
+  # Restituisce i rapporti ordinati per nome esteso della tipologia
+  # Utile per la visualizzazione ordinata nella fattura
+  def rapporti_ordinati_per_nome_tipologia
+    self.rapporti.sort_by{|rapporto| rapporto.tipologia.nome_esteso}
+  end
+
+  # Restituisce tutte le tipologie presenti nei rapporti della fattura
+  def tipologie
+    tipologie_tot = Array.new
+    self.rapporti.each do |rapporto|
+      tipologie_tot << rapporto.tipologia
+    end
+    return tipologie_tot
+  end
+
+  # Restituisce solo le tipologie a forfeit presenti nei rapporti della fattura
+  def tipologie_a_forfeit
+    tipologie_tot = Array.new
+    self.rapporti.each do |rapporto|
+      tipologie_tot << rapporto.tipologia if rapporto.tipologia.forfeit
+    end
+    return tipologie_tot
+  end
+
+  # Restituisce le tipologie non a forfeit presenti nei rapporti della fattura
+  def tipologie_non_a_forfeit
+    self.tipologie - self.tipologie_a_forfeit
+  end
+
+  # Restituisce i rapporti che hanno una specifica tipologia
+  def solo_rapporti_con_tipologia_del_tipo(tipologia)
+    rapporti_tot = Array.new
+    self.rapporti.each do |rapporto|
+      rapporti_tot << rapporto if rapporto.tipologia == tipologia
+    end
+    return rapporti_tot
+  end
+
+  # Conta quanti rapporti hanno una specifica tipologia
+  def numero_di_tipologie(tipologia)
+    self.solo_rapporti_con_tipologia_del_tipo(tipologia).size
+  end
+
+  # Restituisce il prezzo di una tipologia
+  # Se la tipologia è a forfeit, restituisce il prezzo forfettario
+  # Altrimenti, restituisce il prezzo delle prove automatiche
+  def prezzo_della_tipologia(tipologia)
+    risultato = 0
+    self.rapporti.each do |rapporto|
+      if rapporto.tipologia == tipologia
+        if tipologia.forfeit
+          risultato = rapporto.prezzo_tipologia_forfeit
+        else
+          risultato = rapporto.prezzo_auto_prove           
+        end
+      end
+    end
+    return risultato
+  end
+
+  # Aggiorna il prezzo di una tipologia a forfeit in tutti i rapporti che la utilizzano
+  def aggiorna_il_prezzo_della_tipologia(tipologia, prezzo)
+    self.rapporti.each do |rapporto|
+      if rapporto.tipologia == tipologia
+        if rapporto.tipologia.forfeit
+          rapporto.update_attribute(:prezzo_tipologia_forfeit, prezzo)
+        end
+      end
+    end
+  end
+
+  # Aggiorna il prezzo di una prova automatica in tutti i rapporti che la utilizzano
+  def aggiorna_il_prezzo_della_auto_prova(prova, prezzo)
+    self.rapporti.each do |rapporto|
+      rapporto.auto_prova_rapporto_items.each do |auto_prova_rapporto_item|
+        if auto_prova_rapporto_item.prova == prova
+          auto_prova_rapporto_item.update_attribute(:prezzo, prezzo)
+        end
+      end
+    end
+  end
+
+  # Allinea i prezzi delle tipologie a forfeit al prezzo più basso tra i rapporti
+  # Utile per mantenere coerenza nei prezzi tra rapporti simili
+  def allinea_i_prezzi_di_medesime_tipologie_al_prezzo_piu_basso
+    prezzo_modificato = false
+    self.tipologie.uniq.each do |tipologia|
+      if tipologia.forfeit
+        prezzo_piu_basso = self.solo_rapporti_con_tipologia_del_tipo(tipologia).sort_by{|rapporto| rapporto.prezzo_auto_prove}[0].prezzo_auto_prove
+        self.solo_rapporti_con_tipologia_del_tipo(tipologia).each do |rapporto|
+          if rapporto.prezzo_auto_prove != prezzo_piu_basso
+            rapporto.update_attribute(:prezzo_tipologia_forfeit, prezzo_piu_basso)
+            prezzo_modificato = true
+          end
+        end
+      end
+    end
+    return prezzo_modificato
+  end
+
+  # Se tipologie uguali hanno prezzi diversi, assegna il prezzo di listino a tutte
+  def se_medesime_tipologie_hanno_prezzi_diversi_assegna_il_prezzo_di_listino
+    # Implementazione non mostrata qui
+  end
+
+  # Restituisce le prove aggiuntive di tutti i rapporti
+  def prove
+    # ATTENZIONE: sono solo le prove aggiuntive, non le prove standard delle tipologie
+    prove_tot = Array.new
+    # Implementazione non mostrata qui
+    return prove_tot
+  end
+
+  # Restituisce gli elementi di prova_rapporto_items di tutti i rapporti
+  def prova_rapporto_items
+    prova_rapporto_items_tot = Array.new
+    # Implementazione non mostrata qui
+    return prova_rapporto_items_tot
+  end
+
+  # Restituisce gli elementi di auto_prova_rapporto_items di tutti i rapporti
+  def auto_prova_rapporto_items
+    auto_prova_rapporto_items_tot = Array.new
+    # Implementazione non mostrata qui
+    return auto_prova_rapporto_items_tot
+  end
+
+  # Restituisce solo gli elementi di prova_rapporto_items che hanno una specifica prova
+  def solo_prova_rapporto_items_con_prova_del_tipo(prova)
+    prova_rapporto_items_tot = Array.new
+    # Implementazione non mostrata qui
+    return prova_rapporto_items_tot
+  end
+
+  # Restituisce solo gli elementi di auto_prova_rapporto_items che hanno una specifica prova
+  def solo_auto_prova_rapporto_items_con_prova_del_tipo(prova)
+    auto_prova_rapporto_items_tot = Array.new
+    # Implementazione non mostrata qui
+    return auto_prova_rapporto_items_tot
+  end
+
+  # Conta quante volte una specifica prova aggiuntiva è presente nei rapporti
+  def numero_di_prove(prova)
+    return solo_prova_rapporto_items_con_prova_del_tipo(prova).size
+  end
+
+  # Restituisce il prezzo di una prova aggiuntiva
+  def prezzo_della_prova(prova)
+    risultato = 0
+    # Implementazione non mostrata qui
+    return risultato
+  end
+
+  # Restituisce il prezzo di una prova automatica
+  def prezzo_della_auto_prova(prova)
+    risultato = 0
+    # Implementazione non mostrata qui
+    return risultato
+  end
+
+  # Aggiorna il prezzo di una prova aggiuntiva in tutti i rapporti che la utilizzano
+  def aggiorna_il_prezzo_della_prova(prova, prezzo)
+    self.rapporti.each do |rapporto|
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Calcola il totale delle analisi senza prove aggiuntive
+  def totale_analisi_senza_prove_aggiuntive
+    risultato = 0
+    # Implementazione non mostrata qui
+    return risultato
+  end
+
+  # Calcola il totale di tutte le analisi (standard e aggiuntive)
+  def totale_analisi
+    risultato = 0
+    # Implementazione non mostrata qui
+    return risultato
+  end
+
+  # Calcola il totale di listino di tutte le analisi
+  def totale_analisi_di_listino
+    risultato = 0
+    # Implementazione non mostrata qui
+    return risultato
+  end
+
+  # Calcola lo sconto in euro in base alla percentuale specificata
+  def sconto
+    self.totale_analisi * self.percentuale_sconto/100
+  end
+
+  # Calcola l'imponibile (totale analisi meno sconto)
+  def imponibile
+    # Base imponibile su cui si calcola l'IVA
+    self.totale_analisi - self.sconto
+  end
+
+  # Calcola l'imposta (IVA)
+  def imposta
+    self.imponibile * IVA # IVA = 0.20
+  end
+
+  # Calcola il totale della fattura (imponibile + imposta)
+  def totale
+    self.imposta + self.imponibile
+  end
+
+  # Verifica se il PDF della fattura esiste
+  def pdf_esiste?
+    if self.anno.blank? || self.numero.blank?
+      return false
+    else
+      File.exist?(self.nome_file_pdf_della_fattura_con_path_assoluto)
+    end
+  end
+
+  # Verifica se esiste un backup del PDF della fattura
+  def pdf_backup_esiste?
+    File.exist?(self.nome_file_pdf_della_fattura_di_backup_con_path_assoluto)
+  end
+
+  # Elimina il PDF della fattura se esiste
+  def pdf_elimina
+    if !self.anno.blank? && !self.numero.blank?
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Elimina tutti i file PDF relativi alla fattura dopo la cancellazione
+  def pdf_elimina_tutto_a_seguito_cancellazione_fattura
+    unless self.numero.blank?
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Restituisce il nome del file PDF della fattura
+  def nome_file_pdf_della_fattura
+    return "Fattura_#{self.anno}_#{self.numero}.pdf"
+  end
+
+  # Restituisce il percorso completo del file PDF della fattura
+  def nome_file_pdf_della_fattura_con_path_assoluto
+    File.join(DIRECTORY_ASSOLUTA_PDF_RAPPORTI, self.nome_file_pdf_della_fattura)
+  end
+
+  # Restituisce il percorso completo del backup del file PDF della fattura
+  def nome_file_pdf_della_fattura_di_backup_con_path_assoluto
+    File.join(DIRECTORY_ASSOLUTA_PDF_RAPPORTI, File.basename(self.nome_file_pdf_della_fattura_con_path_assoluto, '.pdf')+'.bak.pdf')
+  end
+
+  # Gestisce gli indirizzi automatici per la fatturazione
+  # Se usa_indirizzo_di_fatturazione è true, usa l'indirizzo di fatturazione del cliente
+  # Altrimenti usa l'indirizzo normale del cliente
+  def indirizzo_automatico
+    if self.usa_indirizzo_di_fatturazione
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Gestisce il CAP automatico per la fatturazione
+  def cap_automatico
+    if self.usa_indirizzo_di_fatturazione
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Gestisce il comune automatico per la fatturazione
+  def comune_automatico
+    if self.usa_indirizzo_di_fatturazione
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Gestisce la provincia automatica per la fatturazione
+  def provincia_automatico
+    if self.usa_indirizzo_di_fatturazione
+      # Implementazione non mostrata qui
+    end
+  end
+
+  # Validazione personalizzata per verificare che la data di pagamento
+  # non sia antecedente alla data di emissione
+  def validate
+    errors.add :data_pagamento, "non può essere antecedente alla data di emissione" if !data_pagamento.nil? && (data_pagamento < data_emissione)
+  end
+end 

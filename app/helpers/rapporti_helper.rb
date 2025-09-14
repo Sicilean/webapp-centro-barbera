@@ -72,7 +72,10 @@ module RapportiHelper
   def tipologia_form_column(record, input_name)
      if record.id.nil?
       campi_per_select = [['-seleziona-','']]+
-                         Tipologia.all.map{|tipologia| ["#{tipologia.matrice.nome} - #{tipologia.to_label}", tipologia.id]}.sort
+                         Tipologia.all.map{|tipologia| 
+                           matrice_nome = tipologia.matrice.nil? ? 'Senza Matrice' : tipologia.matrice.nome
+                           ["#{matrice_nome} - #{tipologia.to_label}", tipologia.id]
+                         }.sort
       select 'record', :tipologia, campi_per_select, :name => input_name
      else
       #campi_per_select = [['-seleziona-','']]+

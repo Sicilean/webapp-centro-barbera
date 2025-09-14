@@ -1,7 +1,0 @@
-la generazione dei pdf si fa, nell'ambiente che ti interessa,
-
-script/console
-load '/home/dante/rails/centroenowine.dyndns.org/genera_pdf.rb'
-
-sul server
-load '/home/dante/rails/barbera/genera_pdf.rb'

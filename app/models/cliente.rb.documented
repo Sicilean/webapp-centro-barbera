@@ -1,0 +1,152 @@
+# Modello Cliente
+# Rappresenta un cliente del laboratorio di analisi
+# Gestisce dati anagrafici, fiscali e relazioni con campioni e fatture
+class Cliente < ActiveRecord::Base
+
+  # Relazioni
+  # Un cliente può avere molti utenti associati (es. accessi diversi)
+  # Se il cliente viene eliminato, anche gli utenti associati verranno eliminati
+  has_many :users, :dependent => :destroy # cancello il cliente, e cancello i suoi users
+
+  # Un cliente può avere molti campioni e fatture
+  # Se il cliente viene eliminato, anche i suoi campioni e fatture verranno eliminati
+  has_many :campioni, :dependent => :destroy 
+  has_many :fatture, :dependent => :destroy 
+
+  # Callback che verifica se è possibile eliminare il cliente
+  # Un cliente può essere eliminato solo se non ha campioni o fatture associati
+  before_destroy :cancella_pure_dato_che_non_e_utilizzato
+
+  # Validazioni
+  # Il nome è obbligatorio e deve essere unico (senza considerare maiuscole/minuscole)
+  validates_presence_of :nome
+  validates_uniqueness_of :nome, :case_sensitive => false
+  
+  # Il codice cliente (se presente) deve essere unico e numerico intero
+  validates_uniqueness_of :codice, :allow_nil => true, :case_sensitive => false
+  validates_numericality_of :codice, :only_integer => true, :allow_nil => true
+  
+  # Validazioni su CAP, partita IVA e codice fiscale
+  validates_numericality_of :cap, :only_integer => true, :allow_nil => true
+  validates_length_of :cap, :is => 5, :allow_nil => true
+  validates_length_of :partita_iva, :is => 11, :allow_nil => true
+  validates_length_of :codice_fiscale, :is => 16, :allow_nil => true
+ 
+  # Restituisce una rappresentazione testuale del cliente (usato nelle UI)
+  def to_label
+    "#{nome}"
+  end
+
+  # Formatta il codice fiscale sempre in maiuscolo
+  def codice_fiscale=(testo)
+    testo = testo.upcase unless testo.nil?
+    write_attribute(:codice_fiscale, testo)
+  end
+
+  # Formatta l'email per notifiche sempre in minuscolo
+  def email_per_notifiche=(testo)
+    testo = testo.downcase unless testo.nil?
+    write_attribute(:email_per_notifiche, testo)
+  end
+
+  # Formatta il nome rimuovendo spazi iniziali/finali e mettendo la prima lettera in maiuscolo
+  def nome=(testo)
+    unless testo.nil?
+      testo = testo.to_s.strip
+      testo = (testo.slice(0,1)).upcase+(testo.slice(1..-1)).to_s
+    end
+    write_attribute(:nome, testo)
+  end
+
+  # Converte il prezzo da centesimi (salvati nel DB) a euro
+  def prezzo
+    read_attribute(:prezzo) / 100
+  end
+
+  # Restituisce tutti i rapporti associati a tutti i campioni del cliente
+  # Utile per avere una visione aggregata di tutti i rapporti
+  def rapporti
+    rapporti_totali = Array.new
+    self.campioni.each do |campione|
+      campione.rapporti.each do |rapporto|
+       rapporti_totali << rapporto
+      end
+    end
+    return rapporti_totali
+  end
+
+  # Restituisce solo i rapporti che sono nello stato "completo"
+  # Utile per reportistica o per verificare quali rapporti sono completati
+  def rapporti_completi
+    rapporti_totali = Array.new
+    self.campioni.each do |campione|
+      campione.rapporti.each do |rapporto|
+       (rapporti_totali << rapporto) if rapporto.status == 'completo'
+      end
+    end
+    return rapporti_totali
+  end
+
+  # Restituisce tutti i campioni con data successiva al 1° gennaio 2011
+  # Usato per filtrare campioni recenti (utile per reportistica o fatturazione)
+  def campioni_dal_2011
+    Campione.find(:all,
+                  :conditions => "cliente_id = #{self.id} AND data >= '2011-01-01 00:00:00'")
+  end
+
+  # Restituisce i rapporti che possono essere fatturati
+  # Un rapporto è fatturabile se è pronto (completo con numero) e non è già stato fatturato
+  # Considera solo campioni dal 2011 in poi
+  def rapporti_fatturabili
+    rapporti_totali = Array.new
+    self.campioni_dal_2011.each do |campione|
+      campione.rapporti.each do |rapporto|
+       (rapporti_totali << rapporto) if (!rapporto.fattura && rapporto.rdp_pronto?)
+      end
+    end
+    return rapporti_totali
+  end
+
+  # Verifica se è possibile cancellare il cliente
+  # Restituisce true se il cliente può essere cancellato (non utilizzato)
+  # Solleva un'eccezione se il cliente ha campioni o fatture associati
+  def cancella_pure_dato_che_non_e_utilizzato
+    if !self.utilizzato?
+      return true
+    else
+       raise "Non posso cancellare una cliente se utilizzato"
+       logger.info("Tentativo di cancellazione di cliente utilizzato")
+      return false
+    end
+  end
+
+  # Verifica se il cliente è utilizzato (ha campioni o fatture associati)
+  # Restituisce true se il cliente ha almeno un campione o una fattura
+  def utilizzato?
+    if self.campioni.empty? && self.fatture.empty?
+      return false
+    else
+      return true
+    end
+  end
+
+  # Verifica se il cliente è un cliente di test
+  # I clienti di test hanno la parola "test" nel nome
+  def cliente_test?
+    return true if self.nome.downcase =~ / test /
+  end
+
+  protected
+  
+  # Validazione personalizzata per verificare il formato del codice fiscale e partita IVA
+  # Utilizza le classi ControllaCodiceFiscale e ControllaPartitaIva per la verifica
+  def validate
+    unless codice_fiscale.nil? || codice_fiscale.to_s.size != 16
+      errors.add('codice_fiscale', 'formalmente errato') unless ControllaCodiceFiscale.valid?(codice_fiscale)
+    end
+    unless partita_iva.nil? || partita_iva.to_s.size != 11
+      errors.add('partita_iva', 'formalmente errata') unless ControllaPartitaIva.valid?(partita_iva)
+    end
+  end
+
+end 

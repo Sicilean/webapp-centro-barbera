@@ -19,6 +19,10 @@ ActionController::Routing::Routes.draw do |map|
   
   map.connect   'rapporti/da_completare', :controller => 'rapporti', :action => 'da_completare'
   map.connect   'rapporti/stampa_dati_di_tutti_i_rapporti', :controller => 'rapporti', :action => 'stampa_dati_di_tutti_i_rapporti'
+  map.connect   'rapporti/:id/crea_pdf', :controller => 'rapporti', :action => 'crea_pdf'
+  map.connect   'rapporti/:id/mostra_pdf', :controller => 'rapporti', :action => 'mostra_pdf'
+  map.connect   'fatture/:id/crea_pdf', :controller => 'fatture', :action => 'crea_pdf'
+  map.connect   'fatture/:id/mostra_pdf', :controller => 'fatture', :action => 'mostra_pdf'
 
   map.resources :rapporti, :active_scaffold => true
 
