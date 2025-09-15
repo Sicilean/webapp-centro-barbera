@@ -305,15 +305,44 @@ class RapportiController < ApplicationController
         # calcolo le variabili da mostrare (le colonne)
         @variabili = []
         @rapporti.each do |rapporto|
-          # rapporto.prove[0].variabili sono le variabili che devo visualizzare del rapporto
-          variabili_da_visualizzare = rapporto.prove_totali.map {|prova| prova.variabili}.flatten.uniq rescue []
-          @variabili += variabili_da_visualizzare
+          begin
+            logger.info "ANTEPRIMA DEBUG: Elaborando rapporto ID #{rapporto.id}, numero #{rapporto.numero}"
+            
+            # Controlla se il rapporto ha prove
+            prove_totali = rapporto.prove_totali
+            logger.info "ANTEPRIMA DEBUG: Rapporto #{rapporto.id} ha #{prove_totali.size} prove totali"
+            
+            if prove_totali.empty?
+              logger.warn "ANTEPRIMA DEBUG: Rapporto #{rapporto.id} non ha prove associate"
+              next
+            end
+            
+            # rapporto.prove[0].variabili sono le variabili che devo visualizzare del rapporto
+            variabili_da_visualizzare = prove_totali.map do |prova|
+              logger.info "ANTEPRIMA DEBUG: Prova #{prova.id} (#{prova.nome}) ha #{prova.variabili.size rescue 0} variabili"
+              prova.variabili
+            end.flatten.uniq
+            
+            logger.info "ANTEPRIMA DEBUG: Rapporto #{rapporto.id} contribuisce con #{variabili_da_visualizzare.size} variabili"
+            @variabili += variabili_da_visualizzare
+            
+          rescue => e
+            logger.error "ANTEPRIMA DEBUG: Errore elaborando rapporto #{rapporto.id}: #{e.message}"
+            logger.error "ANTEPRIMA DEBUG: #{e.backtrace.join("\n")}"
+          end
         end
         @variabili.uniq! # le colonne
         
+        logger.info "ANTEPRIMA DEBUG: Totale variabili trovate: #{@variabili.size}"
+        @variabili.each { |v| logger.info "ANTEPRIMA DEBUG: Variabile: #{v.id} - #{v.nome} (#{v.simbolo})" } unless @variabili.empty?
+        
         # Se non ci sono variabili da mostrare, mostra un avviso
         if @variabili.empty?
-          logger.warn "Anteprima risultati: nessuna variabile trovata per i rapporti #{params[:rapporty_array].join(', ')}"
+          logger.warn "ANTEPRIMA RISULTATI: Nessuna variabile trovata per i rapporti #{params[:rapporty_array].join(', ')}"
+          logger.warn "ANTEPRIMA RISULTATI: Possibili cause:"
+          logger.warn "  - I rapporti non hanno prove associate"
+          logger.warn "  - Le prove non hanno variabili definite"
+          logger.warn "  - Errore nel caricamento delle relazioni database"
         end
         
         # Intestazione

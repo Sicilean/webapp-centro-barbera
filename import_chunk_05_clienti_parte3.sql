@@ -1,0 +1,33 @@
+-- CHUNK 5: Clienti parte 3 (dal 50 al 101)
+USE barbera_development;
+
+INSERT INTO `clienti` (id, nome, denominazione, codice, indirizzo, cap, comune, provincia, partita_iva, codice_fiscale, tel, fax, email_per_notifiche, cellulare_per_sms, titolare_cellulare, note, created_at, updated_at, cellulare_per_sms_2, titolare_cellulare_2) VALUES 
+(50,'La Torre','Cant. soc. "La Torre" Sooc. Coop. A.r.l.','47','c/da Bovo Montagna','92020','Racalmuto','AG','00269390845',NULL,'0922/942194','0922/949198',NULL,NULL,NULL,NULL,'2010-04-28 11:24:30','2010-04-28 11:24:30',NULL,NULL),
+(51,'V.zo Messana','Az. Agr. Vincenzo Messana','48','Via Tolomea, 50','90100','Palermo','PA','04150580829','MSSVCN30C13A176Z','091/8668785','091/8669555','az.agricolamessana@alice.it','3206357022','Rosario Bellafiore',NULL,'2010-04-29 09:39:49','2010-04-29 09:39:49',NULL,NULL),
+(52,'Funaro Tiziana','Funaro Tiziana','49','Via Delle Alpi,36','90100','Palermo','PA','04944080821',NULL,NULL,NULL,'info@funaro.it',NULL,NULL,NULL,'2010-04-30 09:54:48','2010-04-30 09:54:48',NULL,NULL),
+(53,'Palermo Rosaria','Palermo Rosaria','50','Via A.La Licata','91026','Mazara Del Vallo','TP','00719300816','PLRRSR59D60F061M','333/1462567',NULL,NULL,NULL,NULL,'Agr. Cognata Sebbio','2010-05-03 09:33:12','2010-05-03 09:33:12',NULL,NULL),
+(54,'Palermo Luciano Pio','Palermo Luciano Pio','51','Via F.Crispi  n.201','91018','Salemi','TP','01297670810','PLRLNP61C28H700F','334/3356654',NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 14:49:12','2010-05-07 15:01:56',NULL,NULL),
+(55,'Di Stefano Salvatore','Di Stefano Salvatore','52','Via L.Da Vinci  n. 7','91018','Salemi','TP','01923450819','DSTSVT69A20H700J','333/3348075',NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 14:52:15','2010-05-07 15:00:58',NULL,NULL),
+(56,'Costanza Antonino','Costanza Antonino','53','Via Vallona  n.8','93033','Pordenone','PN','00303920938','CSTNNN28M01F061W','348/9329960',NULL,NULL,NULL,NULL,NULL,'2010-05-07 14:53:31','2010-05-07 15:00:21',NULL,NULL),
+(57,'Russo Salvatore','Russo Salvatore','54','Via Lorenzo Viani n. 2','91026','Mazara Del Vallo','TP','00553210816','RSSSVT46R24F061B',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 14:59:31','2010-05-07 14:59:31',NULL,NULL),
+(58,'Giammarinaro Giovann','Giammarinaro Giovanna','55','Via Giulio Cesare  n. 12','91026','Mazara Del Vallo','TP','01756160816','GMMGNN59M47F061B',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 15:03:59','2010-05-07 15:03:59',NULL,NULL),
+(59,'Merendino M.Concetta','Merendino Maria Concetta','56','Marina di Massa Via Mazzini n. 14','54100','Massa','MS',NULL,'MRNMCN58E66H700F',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 15:06:53','2010-05-07 15:06:53',NULL,NULL),
+(60,'Catalano Domenico','Catalano Domenico','57','Via Giulio Cesare n. 12','91026','Mazara Del Vallo','TP','00552720815','CTLDNC44L21F061G',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 15:08:40','2010-05-07 15:08:40',NULL,NULL),
+(61,'Catalano Vincenzo','Catalano Vincenzo','58','Via Giulio Cesare  n. 12','91026','Mazara Del Vallo','TP','01254960816','CTLVCN46C07F061M',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 15:09:55','2010-05-07 15:09:55',NULL,NULL),
+(62,'Caruso Roberto','Caruso Roberto','59','Via G.Mazzini  n. 12','54100','Massa','MS','01490020813','CRSRRT53C29L331N',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 15:11:23','2010-05-07 15:11:23',NULL,NULL),
+(63,'Alfano Dorotea G.ppa','Alfano Dorotea Giuseppa','60','Via Mazzini n.16','91021','Campobello Di Mazara','TP','02162900811',NULL,NULL,NULL,NULL,NULL,NULL,'Pietro Clemente','2010-05-07 15:14:58','2010-05-07 15:14:58',NULL,NULL),
+(64,'Noto Gaspare','Noto Gaspare','61','via Galileo Galilei n. 22','90100','Palermo','PA','02428000828',NULL,'091 6827225',NULL,NULL,NULL,NULL,'Dott. Agr. Noto Gaspare','2010-05-07 15:41:24','2010-05-07 15:41:24',NULL,NULL),
+(65,'Maggio Giuseppe','Maggio Giuseppe','62','c/da Casazze n. 264','91025','Marsala','TP','00379380819','MGGGPP37R30E974A',NULL,NULL,NULL,NULL,NULL,NULL,'2010-05-07 16:53:50','2010-05-07 16:53:50',NULL,NULL),
+(66,'Accardi Giuseppa','Accardi Giuseppa','63','VIA G.HOPPS','91026','Mazara Del Vallo','TP','01955150816',NULL,'0923/942123',NULL,NULL,NULL,NULL,'Pietro Clemente (il numero di telefono è della farmacia)','2010-05-07 16:56:41','2010-05-07 16:56:41',NULL,NULL),
+(67,'Perrone Pietro','Perrone Pietro','64','Via Alfieri n. 3','91026','Mazara Del Vallo','TP','01602880815','PRRPTR67C24F061U',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 16:58:11','2010-05-07 16:58:11',NULL,NULL),
+(68,'Randazzo Antonia','Randazzo Antonia','65','Via F.Pompeano n. 39','91026','Mazara Del Vallo','TP','00521400812','RNDNTN27B63F061B',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 16:59:37','2010-05-07 16:59:37',NULL,NULL),
+(69,'Pantaleo Vincenza','Pantaleo Vincenza','66','Via Miragliano n. 18','91026','Mazara Del Vallo','TP','02099840817','PNTVCN53E53F061O',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 17:01:00','2010-05-07 17:01:00',NULL,NULL),
+(70,'Catania Gaspare','Catania Gaspare','67','Viale Turchia n. 34','91026','Mazara Del Vallo','TP','00552700817','CTNGPR42A01F061Q','0923/945819',NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 17:03:21','2010-05-07 17:03:21',NULL,NULL),
+(71,'Giglio Tommaso','Giglio Tommaso','68','Via Strabona Ang.Via Castelvetrano','91026','Mazara Del Vallo','TP','00297270811','GGLTMS53M22F061D',NULL,NULL,NULL,NULL,NULL,'Cognata Sebbio','2010-05-07 17:05:24','2010-05-07 17:05:24',NULL,NULL),
+(72,'Marotta Filippo','Marotta Filippo','69','Via Porridoni n. 7','62010','Recanati','MC','01296020439',NULL,NULL,NULL,NULL,NULL,NULL,'Pietro Clemente','2010-05-07 17:15:12','2010-05-07 17:15:12',NULL,NULL),
+(73,'La Tona Maria Grazia','La Tona Maria Grazia','70','Via Benedetto Croce n. 7','91028','Partanna','TP','01454950815',NULL,NULL,NULL,NULL,NULL,NULL,'Gambina Franco','2010-05-07 17:17:03','2010-05-07 17:17:03',NULL,NULL),
+(74,'Minaudo Rosaria','Minaudo Rosaria','71','Via Zagato  n. 111','91028','Partanna','TP','00754310811',NULL,NULL,NULL,NULL,NULL,NULL,'Gambiana Franco','2010-05-07 17:18:33','2010-05-07 17:18:33',NULL,NULL),
+(75,'Romeo Vita','Romeo Vita','72','Via Vesuvio n. 13','91026','Mazara Del Vallo','TP','01593750811','RMOVTI65R55F061C',NULL,NULL,NULL,NULL,NULL,'Puleo','2010-05-07 17:21:30','2010-05-07 17:21:59',NULL,NULL),
+(101,'Reina S.a.s.','Reina S.a.s.','98','Corso Umberto I, 110','91026','01962690812','TP','01962690812',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'2010-05-28 15:09:20','2010-05-28 15:09:20',NULL,NULL);
+
+SELECT 'Chunk 5: Clienti parte 3 completati!' as Status;

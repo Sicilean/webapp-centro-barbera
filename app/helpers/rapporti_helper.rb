@@ -59,10 +59,10 @@ module RapportiHelper
 
   def anno_form_column(record, input_name)
     # attenzione, non puoi usare il seguente visto ke l'anno NON è una data!
-    # date_select(:record, :anno, :start_year => 2010, :end_year => 2019, :discard_day => true,  :discard_month => true, :include_blank=> true, :default => { :year => Time.now.year })
+    # date_select(:record, :anno, :start_year => 1960, :end_year => 2070, :discard_day => true,  :discard_month => true, :include_blank=> true, :default => { :year => Time.now.year })
     #selected_value = record.anno || Time.now.year
-    #select(:record, :anno, (2010..2019).map{|anno| [anno, anno]}, {:include_blank => true, :selected => selected_value, :name => input_name})
-    select(:record, :anno, (2010..2019).map{|anno| [anno, anno]}, {:include_blank => true, :name => input_name})
+    #select(:record, :anno, (1960..2070).map{|anno| [anno, anno]}, {:include_blank => true, :selected => selected_value, :name => input_name})
+    select(:record, :anno, (1960..2070).map{|anno| [anno, anno]}, {:include_blank => true, :name => input_name})
   end
 
 #  def tipologia_form_column(record, input_name)

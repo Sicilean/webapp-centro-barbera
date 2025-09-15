@@ -198,7 +198,7 @@ VARIABILE_DECIMALI_TYPES =  [['--','']]+(0..8).map{|x| [x.to_s, x]}
 #CAMPIONE_STATUS_TYPES =   [['Accettato', 'Accettato'],
 #                        ['In lavorazione','In lavorazione'],
 #                        ['Pronto','Pronto']]
-CAMPIONE_RC_ANNO_TYPES = (2010..2020).map{|x| [x.to_s, x]}
+CAMPIONE_RC_ANNO_TYPES = (1960..2070).map{|x| [x.to_s, x]}
 CAMPIONE_RDP_ANNO_TYPES = CAMPIONE_RC_ANNO_TYPES
 
 RAPPORTO_STATUS_TYPES = [
