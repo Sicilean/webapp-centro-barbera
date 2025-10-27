@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Anteprima Risultati Analisi</title>
+  <style type="text/css">
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      color: #000;
+      background: white;
+      padding: 10px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header img {
+      max-width: 400px;
+      width: 70%;
+      height: auto;
+    }
+    
+    .header h1 {
+      font-size: 16px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    
+    .risultati-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 10px;
+    }
+    
+    .risultati-table th {
+      background-color: #f0f0f0;
+      border: 1px solid #666;
+      padding: 8px 4px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 9px;
+      vertical-align: top;
+    }
+    
+    .risultati-table td {
+      border: 1px solid #666;
+      padding: 6px 4px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 9px;
+    }
+    
+    .risultati-table td.numero {
+      text-align: right;
+      font-weight: normal;
+    }
+    
+    .risultati-table td.data {
+      text-align: center;
+      font-size: 8px;
+    }
+    
+    .footer {
+      margin-top: 30px;
+      border-top: 1px solid #666;
+      padding-top: 10px;
+      text-align: center;
+      font-size: 9px;
+      color: #333;
+    }
+    
+    .footer strong {
+      font-weight: bold;
+    }
+    
+    /* Assicura che la tabella si adatti alla pagina landscape */
+    @media print {
+      body { 
+        margin: 0; 
+        padding: 5mm;
+      }
+      .risultati-table {
+        font-size: 8px;
+      }
+      .risultati-table th,
+      .risultati-table td {
+        padding: 3px 2px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- INTESTAZIONE -->
+  <div class="header">
+    <% img_path = File.join(Rails.root, 'public', 'images', 'rdp_intestazione.jpg') %>
+    <% if File.exist?(img_path) %>
+      <img src="<%= img_path %>" alt="Centro Enochimico Barbera S.r.l." />
+    <% else %>
+      <div style="border: 2px solid #666; padding: 20px; background-color: #f9f9f9;">
+        <strong>CENTRO ENOCHIMICO BARBERA S.r.l.</strong><br/>
+        Controllo di qualità | Certificazione dei prodotti | Sicurezza alimentare
+      </div>
+    <% end %>
+    <h1>ANTEPRIMA RISULTATI ANALISI</h1>
+  </div>
+
+  <!-- TABELLA RISULTATI -->
+  <% if @rapporti.empty? %>
+    <p><strong>Nessun rapporto selezionato.</strong></p>
+  <% elsif @variabili.empty? %>
+    <p><strong>Nessuna variabile trovata per i rapporti selezionati.</strong></p>
+  <% else %>
+    <table class="risultati-table">
+      <thead>
+        <tr>
+          <th style="width: 20%;">Cliente</th>
+          <th style="width: 25%;">Etichettatura</th>
+          <th style="width: 12%;">Data Esecuzione</th>
+          <% @variabili.each do |variabile| %>
+            <th style="width: <%= (43.0 / @variabili.size).round(1) %>%;">
+              <strong><%= variabile.nome_esteso || variabile.nome %></strong>
+              <% unless variabile.unita_di_misura.blank? %>
+                <br/><small>(<%= variabile.unita_di_misura %>)</small>
+              <% end %>
+            </th>
+          <% end %>
+        </tr>
+      </thead>
+      <tbody>
+        <% riga = 1 %>
+        <% @rapporti.each do |rapporto| %>
+          <tr>
+            <td>
+              <strong><%= rapporto.campione.cliente.nome if rapporto.campione && rapporto.campione.cliente %></strong>
+            </td>
+            <td>
+              <%= rapporto.campione.etichetta if rapporto.campione %>
+            </td>
+            <td class="data">
+              <%= rapporto.data_esecuzione_prove_inizio.strftime('%d/%m/%Y') if rapporto.data_esecuzione_prove_inizio %>
+            </td>
+            <% @variabili.each do |variabile| %>
+              <td class="numero">
+                <%= @tabella[riga] ? @tabella[riga][variabile.id] : '-' %>
+              </td>
+            <% end %>
+          </tr>
+          <% riga += 1 %>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+
+  <!-- PIÈ DI PAGINA -->
+  <div class="footer">
+    <strong>Centro Enochimico Barbera S.r.l.</strong><br/>
+    Controllo di qualità | Certificazione dei prodotti | Sicurezza alimentare | HACCP<br/>
+    Via 2 Cb, 1, 91021 Campobello di Mazara (TP)<br/>
+    Tel/fax: +39 0924 911929<br/>
+    email: info@centrobarbera.it - www.centrobarbera.it<br/>
+    <small>Generato il <%= Date.today.strftime('%d/%m/%Y') %></small>
+  </div>
+
+</body>
+</html>
+
+

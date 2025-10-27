@@ -144,7 +144,11 @@ class Variabile < ActiveRecord::Base
   end
 
   def variabili_coinvolte_in_words
-    return variabili_coinvolte.map{|x| "<#{x.simbolo}>"}.to_s
+    begin
+      return variabili_coinvolte.map{|x| "<#{x.simbolo}>"}.to_s
+    rescue ZeroDivisionError, StandardError => e
+      return "[ERRORE: #{e.message}]"
+    end
   end
 
   def variabili_indipendenti_in_words
@@ -253,42 +257,54 @@ class Variabile < ActiveRecord::Base
 
   def funzione_sviluppata
     if is_funzione?
-      nuova_funzione =''
-      nuova_funzione.replace funzione # necessario, altrimenti in fase di validazione MODIFICO la funzione
-      contatore = 0
-      max_iterazioni = 100
-      until variabili_indipendenti_che_sono_funzioni_per_funzione(nuova_funzione,matrice).empty? || contatore == max_iterazioni
-        # fin tanto almeno una delle variabili indipendenti è una funzione
-        # sostituisci la variabile indipendente funzione, con la sua funzione TRA PARENTESI
-        variabili_indipendenti_che_sono_funzioni_per_funzione(nuova_funzione, matrice).each do |variabile|
-          # sostituisco, ma solo per insieme di 1max2 lettere!!!attanto!
-          nuova_funzione.gsub!(/[A-Z]{1,4}/) do |match|
-            if match == variabile.simbolo
-              "(#{variabile.funzione})"
-            else
-              match
+      begin
+        nuova_funzione =''
+        nuova_funzione.replace funzione # necessario, altrimenti in fase di validazione MODIFICO la funzione
+        contatore = 0
+        max_iterazioni = 100
+        until variabili_indipendenti_che_sono_funzioni_per_funzione(nuova_funzione,matrice).empty? || contatore == max_iterazioni
+          # fin tanto almeno una delle variabili indipendenti è una funzione
+          # sostituisci la variabile indipendente funzione, con la sua funzione TRA PARENTESI
+          variabili_indipendenti_che_sono_funzioni_per_funzione(nuova_funzione, matrice).each do |variabile|
+            # sostituisco, ma solo per insieme di 1max2 lettere!!!attanto!
+            nuova_funzione.gsub!(/[A-Z]{1,4}/) do |match|
+              if match == variabile.simbolo
+                "(#{variabile.funzione})"
+              else
+                match
+              end
             end
           end
+          #
+          # se non esco da questo loop significa che c'è un riferimento circolare!!!!
+          contatore += 1
         end
-        #
-        # se non esco da questo loop significa che c'è un riferimento circolare!!!!
-        contatore += 1
-      end
-      if contatore == max_iterazioni
-        # attento NON MODIFICARE la seguente che mi serve per la validazione
-        return "**#{ERRORE_TAG}** - RIFERIMENTO CIRCOLARE"
-      else
-        return nuova_funzione
+        if contatore == max_iterazioni
+          # attento NON MODIFICARE la seguente che mi serve per la validazione
+          return "**ERRORE** - RIFERIMENTO CIRCOLARE"
+        else
+          return nuova_funzione
+        end
+      rescue ZeroDivisionError, StandardError => e
+        return "**ERRORE** - #{e.message}"
       end
     end
   end
 
   def funzione_decodificata
-    return decodifica(funzione)
+    begin
+      return decodifica(funzione)
+    rescue ZeroDivisionError, StandardError => e
+      return "**ERRORE** - #{e.message}"
+    end
   end
 
   def funzione_sviluppata_decodificata
-    return decodifica(funzione_sviluppata)
+    begin
+      return decodifica(funzione_sviluppata)
+    rescue ZeroDivisionError, StandardError => e
+      return "**ERRORE** - #{e.message}"
+    end
   end
 
   def decodifica(funzione_da_decodificare)

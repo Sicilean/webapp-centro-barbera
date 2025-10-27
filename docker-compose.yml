@@ -29,7 +29,8 @@ services:
       - MYSQL_DATABASE=barbera_development
     volumes:
       - db_data:/var/lib/mysql
-      - ./barbera_development_complete.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./barbera_development_may_30_2010.sql:/docker-entrypoint-initdb.d/01-complete-data.sql
+      - ./import_prova_variabile_items_fixed.sql:/docker-entrypoint-initdb.d/02-prova-variabile-fix.sql
     ports:
       - "3306:3306"
     restart: unless-stopped

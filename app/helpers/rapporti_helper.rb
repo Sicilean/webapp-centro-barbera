@@ -174,7 +174,7 @@ module RapportiHelper
       campione = Campione.find_by_id(params[:campione_id])
       data_di_default = campione.data unless campione.nil?
     end
-    date_select(:record, :data_richiesta, :order => [:day, :month, :year], :default => data_di_default )
+    date_select(:record, :data_richiesta, :order => [:day, :month, :year], :default => data_di_default, :start_year => 1960, :end_year => 2070 )
   end
 
   def data_scadenza_form_column(record, input_name)
@@ -185,7 +185,7 @@ module RapportiHelper
 #    end
 #    # scadenza di default dopo TOT giorni
 #    date_select(:record, :data_scadenza, :order => [:day, :month, :year], :default => data_di_default+3*(60*60*24))
-    datetime_select(:record, :data_scadenza, :include_blank => true, :order => [:day, :month, :year, :hour, :minute])
+    datetime_select(:record, :data_scadenza, :include_blank => true, :order => [:day, :month, :year, :hour, :minute], :start_year => 1960, :end_year => 2070)
   end
 
   def data_esecuzione_prove_inizio_form_column(record, input_name)
@@ -206,20 +206,20 @@ module RapportiHelper
         end
       end
     end
-    "#{date_select(:record, :data_esecuzione_prove_inizio, :include_blank => true, :order => [:day, :month, :year])} "+suggerimento
+    "#{date_select(:record, :data_esecuzione_prove_inizio, :include_blank => true, :order => [:day, :month, :year], :start_year => 1960, :end_year => 2070)} "+suggerimento
   end
 
   def data_esecuzione_prove_fine_form_column(record, input_name)
-    date_select(:record, :data_esecuzione_prove_fine,   :include_blank => true, :order => [:day, :month, :year])
+    date_select(:record, :data_esecuzione_prove_fine, :include_blank => true, :order => [:day, :month, :year], :start_year => 1960, :end_year => 2070)
   end
   def data_stampa_form_column(record, input_name)
-    date_select(:record, :data_stampa, :include_blank => true, :order => [:day, :month, :year])
+    date_select(:record, :data_stampa, :include_blank => true, :order => [:day, :month, :year], :start_year => 1960, :end_year => 2070)
   end
   def data_invio_sms_form_column(record, input_name)
-    date_select(:record, :data_invio_sms, :include_blank => true, :order => [:day, :month, :year])
+    date_select(:record, :data_invio_sms, :include_blank => true, :order => [:day, :month, :year], :start_year => 1960, :end_year => 2070)
   end
   def data_invio_email_form_column(record, input_name)
-    date_select(:record, :data_invio_email, :include_blank => true, :order => [:day, :month, :year])
+    date_select(:record, :data_invio_email, :include_blank => true, :order => [:day, :month, :year], :start_year => 1960, :end_year => 2070)
   end
 
   def pie_pagina_form_column(record, input_name)

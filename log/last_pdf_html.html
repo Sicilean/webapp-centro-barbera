@@ -10,16 +10,184 @@
       <meta name="author" content="Lab. Barbera"/>
       <meta name="subject" content="Anteprima risultati di analisi"/>
       <meta name="keywords" content="PDF, rapporto di prova"/>
+      
+      <!-- CSS inline per PDF con percorsi assoluti -->
+      <style type="text/css">
+        /* Global styles with rails-scaffold's basic css */
+
+/* Default Facebook CSS tratto da http://devtacular.com/articles/bkonrad/how-to-style-an-application-like-facebook/ */
+/* Prince http://www.princexml.com/doc/7.0/properties/ */
+
+/* CSS compatibile con wkhtmltopdf (non supporta @page con layout) */
+@page {
+  /* Margini base per wkhtmltopdf - verranno sovrascritti dal wrapper */
+  margin: 1.3cm 0.8cm;
+}
+
+/* Layout landscape viene gestito dai parametri del wrapper prince */
+@media print {
+  body {
+    /* Assicurati che il contenuto si adatti al landscape */
+    width: 100%;
+    max-width: none;
+  }
+  
+  table.anteprima_risultati {
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  table.anteprima_risultati th,
+  table.anteprima_risultati td {
+    word-wrap: break-word;
+    overflow: hidden;
+  }
+}
+
+/*
+Prince fonts:
+  per il font 'Times' metti 'serif'
+  vedi http://www.princexml.com/doc/7.0/fonts/
+Fonts microsoft a disposizione:
+andale, arial, comic, curier, georgia, impact, times, trebuc, verdana, webdings
+*/
+body {
+    font-family: serif, times, helvetica,tahoma,verdana,arial,sans-serif;
+    font-size: 11px;
+    color: black;
+    line-height: 7pt;
+    background: white;
+    margin-left: 0%;
+    padding-top: 0em;
+    padding-left: 0em;
+    }
+h1, h2, h3, h4, h5 {
+  font-size: 16px;
+  margin: 0px;
+  padding: 0px; }
+
+h1 {
+  font-size: 24px; }
+
+h2 {
+  font-size: 18px; }
+
+h3 {
+  font-size: 17px; }
+
+h4, h5 {
+  font-size: 14px;}
+
+
+table.center {
+    margin-left:auto;
+    margin-right:auto;
+    text-align:left;}
+table.risultati {
+    margin-left:auto;
+    margin-right:auto;
+    text-align:left;
+    font-size: 9px;}
+
+table.anteprima_risultati {
+	border-width: 1px 1px 1px 1px;
+	border-spacing: 0px;
+	border-style: outset outset outset outset;
+	border-color: gray gray gray gray;
+	border-collapse: separate;
+	background-color: white;
+}
+table.anteprima_risultati th {
+        text-align: center;
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+table.anteprima_risultati td {
+	border-width: 1px 1px 1px 1px;
+	padding: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	border-color: gray gray gray gray;
+	background-color: white;
+	-moz-border-radius: 0px 0px 0px 0px;
+}
+
+
+
+        /* prince.css - Stili di base per la generazione PDF con PrinceXML/wkhtmltopdf */
+
+/* Non sovrascrivere i margini già definiti in rdp.css */
+body {
+  /* Mantieni font-family compatibile ma non sovrascrivere layout */
+}
+
+/* Compatibilità con wkhtmltopdf */
+h1, h2, h3, h4, h5, h6 {
+  color: #222;
+  page-break-after: avoid;
+}
+
+/* Assicurati che le tabelle si comportino bene */
+table {
+  border-collapse: collapse;
+  page-break-inside: auto;
+}
+
+/* Non aggiungere bordi extra che possono confliggere */
+td, th {
+  /* Lascia che rdp.css gestisca i bordi */
+}
+
+/* Gestione interruzioni di pagina */
+.page-break-before {
+  page-break-before: always;
+}
+
+.page-break-after {
+  page-break-after: always;
+}
+
+.no-page-break {
+  page-break-inside: avoid;
+}
+
+/* Supporto per wkhtmltopdf - non usa @page ma rispetta i margini del body */
+@media print {
+  body {
+    margin: 0;
+    padding: 2cm 1.5cm 3cm 1.5cm;
+  }
+  
+  .header-section {
+    margin-top: 0;
+  }
+  
+  .footer-section {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1cm 1.5cm;
+    background: white;
+  }
+} 
+      </style>
     
-    
-    <!-- CSS per il PDF -->
-    <link href="/app/public/stylesheets/anteprima_risultati.css" media="all" rel="stylesheet" type="text/css" />
 
   </head>
   <body>
     
 
-  <img alt="" border="0" src="/app/public/images/rdp_intestazione.jpg" width = '35%' /></a><br/><br />
+  <!-- Intestazione Centro Enochimico Barbera per Anteprima -->
+  <div style="text-align: center; margin-bottom: 20px;">
+    
+      <img alt="Centro Enochimico Barbera S.r.l." border="0" src="/app/public/app/public/images/rdp_intestazione.jpg" style="max-width: 100%; width: 70%;" />
+    
+    <h2 style="margin-top: 15px;">ANTEPRIMA RISULTATI ANALISI</h2>
+  </div>
   <br />
 
   <table class ="anteprima_risultati">
@@ -31,16 +199,48 @@
         <th width ="20px" style =" font-size: 9px;">Data esecuzione prove</th>
 
         
+          <th width ="20px" style =" font-size: 8px;background-color: #D8D8D8 ">
+            Anidride Solforosa Totale<br />
+            mg/L
+          </th>
+        
+          <th width ="20px" style =" font-size: 8px;background-color: #D8D8D8 ">
+            Acido Sorbico<br />
+            mg/L
+          </th>
+        
+          <th width ="20px" style =" font-size: 8px;background-color: #D8D8D8 ">
+            Titolo Alcolometrico Volumico<br />
+            % vol.
+          </th>
+        
       </tr>
     </thead>
     <tbody>
       
       
         <tr>
-          <td>Duca di Salaparuta</td>
-          <!-- <td>Rdp 1-C.Q. MCR</td> -->
-          <td style =" font-size: 9px;">prova1</td>
-          <td style =" font-size: 9px;"></td>
+          <td>Budonetto</td>
+          <!-- <td>Rdp 787-Esportazione Giapp.</td> -->
+          <td style =" font-size: 9px;">Vino rosso (vino da tavola) - Cinquanta Castello di Torre a Decima - Tenuta di Budonetto Maurigi
+Cliente: OVERSEAS Co. LTD VINARTE 2  31  8  DAITA  SETAGAYA KU 155-0033 TOKIO 
+Destinazione: Esportazione in Giappone di una partita facente parte del lotto C.Q. 001/09/10
+Quantità Esportata: N° 32 cartoni; 
+Contenitore: Bottiglia in vetro
+</td>
+          <td style =" font-size: 9px;">24-05-2010</td>
+          
+            <td style =" font-size: 9px; text-align: right;">
+              5120
+            </td>
+          
+            <td style =" font-size: 9px; text-align: right;">
+              41.31
+            </td>
+          
+            <td style =" font-size: 9px; text-align: right;">
+              13.10
+            </td>
           
         </tr>
         
@@ -50,7 +250,15 @@
 
 <br />
 <br />
-.
+<!-- Piè di pagina Anteprima Risultati -->
+<hr style="margin-top: 20px;">
+<div style="font-size: 10px; text-align: center;">
+  <strong>Centro Enochimico Barbera S.r.l.</strong><br/>
+  Controllo di qualità | Certificazione dei prodotti | Sicurezza alimentare | HACCP<br/>
+  Via 2 Cb, 1, 91021 Campobello di Mazara (TP)<br/>
+  Tel/fax: +39 0924 911929<br/>
+  email: info@centrobarbera.it - www.centrobarbera.it
+</div>
 
 
   </body>

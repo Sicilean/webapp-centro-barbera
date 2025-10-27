@@ -15,7 +15,14 @@ module ApplicationHelper
     if parametro.nil? || parametro.valore.blank?
       return h "<Parametro:#{codice}>"
     else
-      return trasforma_acapo_in_br parametro.valore
+      # Verifica se il valore contiene già HTML
+      if parametro.valore.match(/<[^>]+>/)
+        # Se contiene HTML, rendilo direttamente safe
+        return parametro.valore.html_safe
+      else
+        # Altrimenti trasforma i newline in <br/>
+        return trasforma_acapo_in_br parametro.valore
+      end
     end
   end
   def mp(codice)
@@ -64,7 +71,7 @@ module ApplicationHelper
       return ''
     else
       risultato = stringa.gsub(/\n/,'<br/>')
-      return risultato
+      return risultato.html_safe
     end
   end
 end

@@ -10,11 +10,17 @@
       <meta name="author" content="Lab. Barbera"/>
       <meta name="subject" content="Anteprima risultati di analisi"/>
       <meta name="keywords" content="PDF, rapporto di prova"/>
+      
+      <!-- CSS inline per PDF con percorsi assoluti -->
+      <style type="text/css">
+        <%= File.read(Rails.root.join('public', 'stylesheets', 'anteprima_risultati.css')) rescue "" %>
+        <%= File.read(Rails.root.join('public', 'stylesheets', 'prince.css')) rescue "" %>
+      </style>
+    <% else %>
+      <!-- CSS per il browser normale -->
+      <%= stylesheet_link_tag "anteprima_risultati", :media => "all" %>
+      <%= stylesheet_link_tag "prince", :media => "all" %>
     <% end %>
-    
-    <!-- CSS per il PDF -->
-    <%= stylesheet_link_tag "anteprima_risultati", :media => "all" %>
-    <%= stylesheet_link_tag "prince", :media => "all" %>
 
   </head>
   <body>

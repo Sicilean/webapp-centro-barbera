@@ -72,7 +72,7 @@ class VariabiliController < ApplicationController
     config.update.columns.exclude :prova_variabile_items # farebbe casino
     config.update.columns.exclude :prove    # farebbe casino
     #
-    config.list.columns.exclude   :funzione_sviluppata, :funzione_sviluppata_decodificata, :funzione_decodificata
+    config.list.columns.exclude   :funzione_sviluppata, :funzione_sviluppata_decodificata, :funzione_decodificata, :variabili_coinvolte_in_words
     config.create.columns.exclude :funzione_sviluppata, :funzione_sviluppata_decodificata, :funzione_decodificata, :variabili_coinvolte_in_words
     config.update.columns.exclude :funzione_sviluppata, :funzione_sviluppata_decodificata, :funzione_decodificata, :variabili_coinvolte_in_words
     #DEBUG

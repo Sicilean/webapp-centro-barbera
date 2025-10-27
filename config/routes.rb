@@ -16,6 +16,8 @@ ActionController::Routing::Routes.draw do |map|
   map.invia_sms     'rapporti/:id/invia_sms', :controller => 'rapporti', :action => 'invia_sms'
   map.invia_email   'rapporti/:id/invia_email', :controller => 'rapporti', :action => 'invia_email'
   map.anteprima_risultati   'rapporti/anteprima_risultati', :controller => 'rapporti', :action => 'anteprima_risultati'
+  # NUOVO ROUTE PDF DIRETTO - FUNZIONA SUBITO!
+  map.connect               'rapporti/anteprima_risultati_pdf', :controller => 'rapporti', :action => 'anteprima_risultati_pdf_diretto'
   
   map.connect   'rapporti/da_completare', :controller => 'rapporti', :action => 'da_completare'
   map.connect   'rapporti/stampa_dati_di_tutti_i_rapporti', :controller => 'rapporti', :action => 'stampa_dati_di_tutti_i_rapporti'

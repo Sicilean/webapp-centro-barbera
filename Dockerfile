@@ -22,21 +22,27 @@ RUN apt-get update && apt-get install -y --force-yes \
     xfonts-75dpi \
     netcat \
     wkhtmltopdf \
+    xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-# Utilizza wkhtmltopdf come alternativa a PrinceXML
+# Utilizza wkhtmltopdf come alternativa a PrinceXML con xvfb per X11
 RUN echo '#!/bin/bash' > /usr/local/bin/prince && \
     echo 'if [ "$1" = "--version" ]; then' >> /usr/local/bin/prince && \
     echo '  echo "Prince 14.2 (wkhtmltopdf wrapper)"' >> /usr/local/bin/prince && \
     echo '  exit 0' >> /usr/local/bin/prince && \
     echo 'fi' >> /usr/local/bin/prince && \
+    echo '# Parametri di base per wkhtmltopdf (formato A4, margini corretti)' >> /usr/local/bin/prince && \
+    echo 'BASE_PARAMS="--page-size A4 --margin-top 2cm --margin-right 1.5cm --margin-bottom 3cm --margin-left 1.5cm --encoding UTF-8 --disable-smart-shrinking --print-media-type"' >> /usr/local/bin/prince && \
     echo 'if [[ "$*" == *"--silent - -o -"* ]]; then' >> /usr/local/bin/prince && \
-    echo '  wkhtmltopdf - -' >> /usr/local/bin/prince && \
+    echo '  xvfb-run -a wkhtmltopdf $BASE_PARAMS --quiet - -' >> /usr/local/bin/prince && \
     echo 'elif [[ "$*" =~ "--silent - -o '"'"'([^'"'"']+)'"'"'" ]]; then' >> /usr/local/bin/prince && \
-    echo '  output_file=${BASH_REMATCH[1]}' >> /usr/local/bin/prince && \
-    echo '  wkhtmltopdf - "$output_file"' >> /usr/local/bin/prince && \
+    echo '  output_file="${BASH_REMATCH[1]}"' >> /usr/local/bin/prince && \
+    echo '  xvfb-run -a wkhtmltopdf $BASE_PARAMS --quiet - "$output_file"' >> /usr/local/bin/prince && \
+    echo 'elif [[ "$*" =~ "--silent - -o ([^[:space:]]+)" ]]; then' >> /usr/local/bin/prince && \
+    echo '  output_file="${BASH_REMATCH[1]}"' >> /usr/local/bin/prince && \
+    echo '  xvfb-run -a wkhtmltopdf $BASE_PARAMS --quiet - "$output_file"' >> /usr/local/bin/prince && \
     echo 'else' >> /usr/local/bin/prince && \
-    echo '  wkhtmltopdf "$@"' >> /usr/local/bin/prince && \
+    echo '  xvfb-run -a wkhtmltopdf $BASE_PARAMS --quiet "$@"' >> /usr/local/bin/prince && \
     echo 'fi' >> /usr/local/bin/prince && \
     chmod +x /usr/local/bin/prince
 
@@ -139,6 +145,43 @@ RUN echo '#!/bin/bash' > /usr/local/bin/docker-entrypoint.sh && \
     echo '  fi' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'fi' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '# Carica i dati di importazione se il database è vuoto' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'if [ -f /app/import_chunk_01_setup.sql ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  data_count=$(mysql -h 172.19.0.2 -u root -ppassword -e "SELECT COUNT(*) FROM barbera_${RAILS_ENV}.clienti;" 2>/dev/null | grep -v "COUNT" | tr -d '"'"'[:space:]'"'"' || echo "0")' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  if [ "$data_count" -eq "0" ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Loading import data chunks..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 1: Setup..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_01_setup.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 2: Matrici e Parametri..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_02_matrici_parametri.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 3: Clienti parte 1..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_03_clienti_parte1.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 4: Clienti parte 2..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_04_clienti_parte2.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 5: Clienti parte 3..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_05_clienti_parte3.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 6: Prove complete..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_06_prove_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 7: Tipologie complete..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_07_tipologie_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 8: Variabili sample..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_08_variabili_sample.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 9: UDM items..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_09_udm_items.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 10: Variabili part 1..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_10_variabili_part1.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 11: Variabili part 2..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_11_variabili_part2.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 12: Variabili part 3..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_12_variabili_part3.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Executing chunk 13: Variabili part 4..."' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_13_variabili_part4.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Data import completed successfully!"' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  else' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    echo "Database already contains data, skipping import chunks"' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  fi' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'fi' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '# Avvia Rails' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'echo "Starting Rails server..."' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'cd /app' >> /usr/local/bin/docker-entrypoint.sh && \
@@ -150,6 +193,10 @@ RUN mkdir -p /app/pdf && chmod 777 /app/pdf
 
 # Assicurati che script/server sia eseguibile
 RUN chmod +x /app/script/server
+
+# Rendi eseguibili gli script di importazione e test
+RUN chmod +x /app/import_data.sh && \
+    chmod +x /app/test_import.sh
 
 # Espone la porta 3000
 EXPOSE 3000

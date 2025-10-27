@@ -641,7 +641,7 @@ CREATE TABLE `variabili` (
   `updated_at` datetime default NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=325 DEFAULT CHARSET=utf8;
-SET character_set_client = @saved_cs_client;
+SET character_set_client = @saved_cs_client;236
 
 --
 -- Dumping data for table `variabili`

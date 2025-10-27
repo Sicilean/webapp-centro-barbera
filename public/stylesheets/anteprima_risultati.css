@@ -3,25 +3,29 @@
 /* Default Facebook CSS tratto da http://devtacular.com/articles/bkonrad/how-to-style-an-application-like-facebook/ */
 /* Prince http://www.princexml.com/doc/7.0/properties/ */
 
+/* CSS compatibile con wkhtmltopdf (non supporta @page con layout) */
 @page {
-  size: A4 landscape;
-  /* margin: 1.3cm; */
-  /* top, right, bottom and left page margins */
-  margin:  1.3cm 0.8cm 1.3cm 0.8cm;
+  /* Margini base per wkhtmltopdf - verranno sovrascritti dal wrapper */
+  margin: 1.3cm 0.8cm;
+}
+
+/* Layout landscape viene gestito dai parametri del wrapper prince */
+@media print {
+  body {
+    /* Assicurati che il contenuto si adatti al landscape */
+    width: 100%;
+    max-width: none;
+  }
   
-  @top-right {
-    content: string(title);
-    font-style: italic;
+  table.anteprima_risultati {
+    width: 100%;
+    table-layout: fixed;
   }
-  @top-left {
-    content: string(source);
-    font-style: italic;
-  }
-  @bottom-right {
-    font-size: 9px;
-    content: "pag. " counter(page) " di " counter(pages);
-    vertical-align: top;
-    padding-top: 1em;
+  
+  table.anteprima_risultati th,
+  table.anteprima_risultati td {
+    word-wrap: break-word;
+    overflow: hidden;
   }
 }
 
