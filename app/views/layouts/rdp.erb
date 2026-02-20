@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
-    <% if params[:format] == 'pdf' %>
+    <% if @rendering_pdf || params[:format] == 'pdf' %>
       <title>Rapporto di prova <%= "n. #{@rapporto.numero} " unless @rapporto.numero.blank? %>- <%= @rapporto.campione.cliente.nome %></title>
       <meta name="author" content="Lab. Barbera"/>
       <meta name="subject" content="Rapporto di prova "/>

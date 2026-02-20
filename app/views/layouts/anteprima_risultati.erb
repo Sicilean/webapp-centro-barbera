@@ -5,7 +5,7 @@
   <head>
     <meta http-equiv="content-type" content="text/html;charset=UTF-8" />
 
-    <% if params[:format] == 'pdf' %>
+    <% if @rendering_pdf || params[:format] == 'pdf' %>
       <title>Anteprima risultati analisi</title>
       <meta name="author" content="Lab. Barbera"/>
       <meta name="subject" content="Anteprima risultati di analisi"/>

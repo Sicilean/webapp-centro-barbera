@@ -393,53 +393,55 @@ class RapportiController < ApplicationController
 
   def anteprima_risultati
     if params[:rapporty_array].nil? || params[:rapporty_array].empty?
-      flash[:error] = "Non hai selezionato alcun rapporto"
-      redirect_to :controller => :admin, :action => :cerca_rapporti
-      return
+      if params[:format] == 'pdf'
+        render :text => "Errore: Non hai selezionato alcun rapporto", :status => 400
+        return
+      else
+        flash[:error] = "Non hai selezionato alcun rapporto"
+        redirect_to :controller => :admin, :action => :cerca_rapporti
+        return
+      end
     else
       begin
         @rapporti = params[:rapporty_array].map{|rapporto_id| Rapporto.find_by_id(rapporto_id.to_i)}.compact
         
         # Se non ci sono rapporti validi, mostra un errore
         if @rapporti.empty?
-          flash[:error] = "Nessun rapporto valido selezionato"
-          redirect_to :controller => :admin, :action => :cerca_rapporti
-          return
+          if params[:format] == 'pdf'
+            render :text => "Errore: Nessun rapporto valido selezionato", :status => 400
+            return
+          else
+            flash[:error] = "Nessun rapporto valido selezionato"
+            redirect_to :controller => :admin, :action => :cerca_rapporti
+            return
+          end
         end
         
         # ordino per numero di Rdp (mettendo per primi quelli che non lo hanno)
         @rapporti.sort! {|x,y| (y.numero||0) <=> (x.numero||0) }
         
-        # calcolo le variabili da mostrare (le colonne)
+        # calcolo le variabili da mostrare (le colonne) - USA variabile_rapporto_items per coerenza
         @variabili = []
         @rapporti.each do |rapporto|
           begin
             logger.info "ANTEPRIMA DEBUG: Elaborando rapporto ID #{rapporto.id}, numero #{rapporto.numero}"
             
-            # Controlla se il rapporto ha prove
-            prove_totali = rapporto.prove_totali
-            logger.info "ANTEPRIMA DEBUG: Rapporto #{rapporto.id} ha #{prove_totali.size} prove totali"
-            
-            if prove_totali.empty?
-              logger.warn "ANTEPRIMA DEBUG: Rapporto #{rapporto.id} non ha prove associate"
-              next
+            # Usa variabile_rapporto_items per ottenere le variabili, non le prove
+            rapporto.variabile_rapporto_items.each do |variabile_rapporto_item|
+              variabile = variabile_rapporto_item.variabile
+              unless @variabili.include?(variabile)
+                @variabili << variabile
+                logger.info "ANTEPRIMA DEBUG: Aggiunta variabile #{variabile.id} - #{variabile.nome} (#{variabile.simbolo})"
+              end
             end
-            
-            # rapporto.prove[0].variabili sono le variabili che devo visualizzare del rapporto
-            variabili_da_visualizzare = prove_totali.map do |prova|
-              logger.info "ANTEPRIMA DEBUG: Prova #{prova.id} (#{prova.nome}) ha #{prova.variabili.size rescue 0} variabili"
-              prova.variabili
-            end.flatten.uniq
-            
-            logger.info "ANTEPRIMA DEBUG: Rapporto #{rapporto.id} contribuisce con #{variabili_da_visualizzare.size} variabili"
-            @variabili += variabili_da_visualizzare
             
           rescue => e
             logger.error "ANTEPRIMA DEBUG: Errore elaborando rapporto #{rapporto.id}: #{e.message}"
             logger.error "ANTEPRIMA DEBUG: #{e.backtrace.join("\n")}"
           end
         end
-        @variabili.uniq! # le colonne
+        # Ordina le variabili per posizione
+        @variabili.sort! {|x,y| (x.posizione_in_rdp||999) <=> (y.posizione_in_rdp||999) }
         
         logger.info "ANTEPRIMA DEBUG: Totale variabili trovate: #{@variabili.size}"
         @variabili.each { |v| logger.info "ANTEPRIMA DEBUG: Variabile: #{v.id} - #{v.nome} (#{v.simbolo})" } unless @variabili.empty?
@@ -486,8 +488,14 @@ class RapportiController < ApplicationController
       rescue => e
         logger.error "Errore in anteprima_risultati: #{e.message}"
         logger.error e.backtrace.join("\n")
-        flash[:error] = "Si è verificato un errore durante la generazione dell'anteprima. Si prega di riprovare."
-        redirect_to :controller => :admin, :action => :cerca_rapporti
+        
+        if params[:format] == 'pdf'
+          # Per PDF, mostra un messaggio di errore invece di fare redirect
+          render :text => "Errore durante la generazione del PDF: #{e.message}", :status => 500
+        else
+          flash[:error] = "Si è verificato un errore durante la generazione dell'anteprima. Si prega di riprovare."
+          redirect_to :controller => :admin, :action => :cerca_rapporti
+        end
       end
     end
   end

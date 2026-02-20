@@ -2,49 +2,52 @@
 
   <!-- Intestazione Centro Enochimico Barbera per Anteprima -->
   <div style="text-align: center; margin-bottom: 20px;">
-    <% if params[:format] == 'pdf' %>
-      <img alt="Centro Enochimico Barbera S.r.l." border="0" src="<%= Rails.root.join('public', 'images', 'rdp_intestazione.jpg') %>" style="max-width: 100%; width: 70%;" />
-    <% else %>
-      <img alt="Centro Enochimico Barbera S.r.l." border="0" src="/images/rdp_intestazione.jpg" style="max-width: 100%; width: 70%;" />
-    <% end %>
+    <img alt="Centro Enochimico Barbera S.r.l." border="0" src="/images/rdp_intestazione.jpg" style="max-width: 100%; width: 70%;" />
     <h2 style="margin-top: 15px;">ANTEPRIMA RISULTATI ANALISI</h2>
   </div>
   <br />
 
-  <table class ="anteprima_risultati">
-    <thead>
-      <tr>
-        <th>Cliente</th>
-        <!-- <th>Rapporto</th> -->
-        <th>Etichettatura</th>
-        <th width ="20px" style =" font-size: 9px;">Data esecuzione prove</th>
-
-        <% @variabili.each do |variabile| %>
-          <th width ="20px" style =" font-size: 8px;background-color: #D8D8D8 ">
-            <%= variabile.nome_esteso %><br />
-            <%= variabile.unita_di_misura %>
-          </th>
-        <% end %>
-      </tr>
-    </thead>
-    <tbody>
-      <%  riga = 1 %>
-      <% @rapporti.each do |rapporto| %>
+  <% if @variabili && !@variabili.empty? && @rapporti && !@rapporti.empty? %>
+    <table class ="anteprima_risultati">
+      <thead>
         <tr>
-          <td><%= rapporto.campione.cliente.nome %></td>
-          <!-- <td><%= rapporto.to_label %></td> -->
-          <td style =" font-size: 9px;"><%= rapporto.campione.etichetta %></td>
-          <td style =" font-size: 9px;"><%= (I18n.l rapporto.data_esecuzione_prove_inizio) unless  rapporto.data_esecuzione_prove_inizio.nil? %></td>
+          <th>Cliente</th>
+          <!-- <th>Rapporto</th> -->
+          <th>Etichettatura</th>
+          <th width ="20px" style =" font-size: 9px;">Data esecuzione prove</th>
+
           <% @variabili.each do |variabile| %>
-            <td style =" font-size: 9px; text-align: right;">
-              <%= @tabella[riga][variabile.id] %>
-            </td>
+            <th width ="20px" style =" font-size: 8px;background-color: #D8D8D8 ">
+              <%= variabile.nome_esteso %><br />
+              <%= variabile.unita_di_misura %>
+            </th>
           <% end %>
         </tr>
-        <% riga += 1 %>
-      <% end%>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <%  riga = 1 %>
+        <% @rapporti.each do |rapporto| %>
+          <tr>
+            <td><%= rapporto.campione.cliente.nome %></td>
+            <!-- <td><%= rapporto.to_label %></td> -->
+            <td style =" font-size: 9px;"><%= rapporto.campione.etichetta %></td>
+            <td style =" font-size: 9px;"><%= (I18n.l rapporto.data_esecuzione_prove_inizio) unless  rapporto.data_esecuzione_prove_inizio.nil? %></td>
+            <% @variabili.each do |variabile| %>
+              <td style =" font-size: 9px; text-align: right;">
+                <%= @tabella[riga][variabile.id] rescue '-' %>
+              </td>
+            <% end %>
+          </tr>
+          <% riga += 1 %>
+        <% end%>
+      </tbody>
+    </table>
+  <% else %>
+    <div style="text-align: center; padding: 40px; color: #999;">
+      <p style="font-size: 14px; font-weight: bold;">Nessun dato disponibile</p>
+      <p style="font-size: 12px;">I rapporti selezionati non contengono risultati di analisi visualizzabili.</p>
+    </div>
+  <% end %>
 
 <br />
 <br />

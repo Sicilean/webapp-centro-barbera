@@ -1,4 +1,4 @@
-<% if error_messages && error_messages.errors.any? %>
+<% if error_messages && !error_messages.errors.empty? %>
 <div id="errorExplanation" class="errorExplanation">
   <h2><%= pluralize(error_messages.errors.count, "errore") %> durante il salvataggio:</h2>
   <ul>

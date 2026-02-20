@@ -22,267 +22,203 @@ class Princely
   
   attr_accessor :exe_path, :style_sheets, :log_file, :logger
 
-  # Initialize method
-  #
   def initialize()
-    # Finds where the application lives, so we can call it.
-    @exe_path = `which prince`.chomp
-    
-    # Se prince non è trovato, prova a cercare il wrapper
-    if @exe_path.length == 0
-      @exe_path = `which prince_wrapper.sh`.chomp
-      if @exe_path.length == 0
-        # Prova a usare il wrapper locale
-        @exe_path = File.join(RAILS_ROOT, 'prince_wrapper.sh')
-        if !File.exist?(@exe_path)
-          raise "Cannot find prince command-line app or prince_wrapper.sh in $PATH"
-        end
-      end
-    end
-    
-    # Se stiamo usando wkhtmltopdf, aggiungi xvfb-run per X11
-    if @exe_path.include?('wkhtmltopdf') || `#{@exe_path} --version 2>&1`.include?('wkhtmltopdf')
-      @exe_path = "xvfb-run -a #{@exe_path}"
-    end
-    
+    @exe_path = find_executable
   	@style_sheets = ''
   	@log_file = "#{RAILS_ROOT}/log/prince.log"
   	@logger = RAILS_DEFAULT_LOGGER
   end
   
-  # Sets stylesheets...
-  # Can pass in multiple paths for css files.
-  #
   def add_style_sheets(*sheets)
     for sheet in sheets do
       @style_sheets << " -s #{sheet} "
     end
   end
   
-  # Returns fully formed executable path with any command line switches
-  # we've set based on our variables.
-  #
-  def exe_path
-    # Add any standard cmd line arguments we need to pass
-    @exe_path << " --input=html --server --log=#{@log_file} "
-    @exe_path << @style_sheets
-    return @exe_path
+  # Builds the full command for PDF generation.
+  # Returns a NEW string each time — never mutates @exe_path.
+  def build_pdf_command(output_file = nil)
+    cmd = @exe_path.to_s.dup
+    cmd += " --input=html --server --log=#{@log_file} "
+    cmd += @style_sheets.to_s
+    if output_file
+      cmd += " --silent - -o '#{output_file}' >> '#{@log_file}' 2>> '#{@log_file}'"
+    else
+      cmd += " --silent - -o -"
+    end
+    cmd
   end
   
-  # Makes a pdf from a passed in string.
-  #
-  # Returns PDF as a stream, so we can use send_data to shoot
-  # it down the pipe using Rails.
-  #
+  # Makes a PDF from a passed in string.
+  # The HTML should already have paths converted by the caller (pdf_helper).
   def pdf_from_string(string, output_file = '-')
-    # Se Prince non è disponibile, usa il fallback nativo
-    if @exe_path.nil? || @exe_path.empty? || !command_available?(@exe_path.split(' ').first)
+    if @exe_path.nil? || @exe_path.to_s.strip.empty? || !command_available?
       logger.info "Prince/wkhtmltopdf non disponibile, usando fallback nativo Ruby"
       return generate_pdf_fallback(string)
     end
     
-    path = self.exe_path()
-    # Don't spew errors to the standard out...and set up to take IO 
-    # as input and output
-    path << ' --silent - -o -'
+    path = build_pdf_command
     
-    # Show the command used...
     logger.info "\n\nPRINCE XML PDF COMMAND"
     logger.info path
     logger.info ''
     
     begin
-      # Controlla se l'input è valido prima di inviarlo a Prince
       if string.nil? || string.empty? || !string.include?('<html')
         logger.error "PRINCE ERROR: Input HTML non valido o vuoto"
         return generate_pdf_fallback(string)
       end
       
-      # Prepara l'HTML per wkhtmltopdf
-      html_string = prepare_html_for_wkhtmltopdf(string)
-      
-      # Actually call the prince command, and pass the entire data stream back.
       pdf = IO.popen(path, "w+")
-      pdf.puts(html_string)
+      pdf.puts(string)
       pdf.close_write
       result = pdf.gets(nil)
       pdf.close_read
       
-      # Verifica se il risultato è un PDF valido
       if result.nil? || result.empty? || !result.start_with?("%PDF")
-        logger.error "PRINCE ERROR: Output is nil, empty or not a valid PDF, usando fallback"
-        logger.error "HTML input length: #{html_string.length} bytes"
-        # Scrivi gli ultimi 100 caratteri di string nei log per debug
-        logger.error "HTML input preview: #{html_string[0..100]}..."
+        logger.error "PRINCE ERROR: Output non valido o non e' un PDF"
+        logger.error "HTML input length: #{string.length} bytes"
+        logger.error "HTML input preview: #{string[0..200]}..."
         return generate_pdf_fallback(string)
       end
       
-      # Verifica che il PDF contenga almeno la struttura minima
       if result.length < 200
-        logger.error "PRINCE ERROR: PDF troppo piccolo, usando fallback. Dimensione: #{result.length} byte"
+        logger.error "PRINCE ERROR: PDF troppo piccolo (#{result.length} byte)"
         return generate_pdf_fallback(string)
       end
       
       return result
     rescue => e
-      logger.error "PRINCE ERROR: Exception during PDF generation: #{e.message}, usando fallback"
+      logger.error "PRINCE ERROR: #{e.message}"
       logger.error e.backtrace.join("\n")
       return generate_pdf_fallback(string)
     end
   end
 
   def pdf_from_string_to_file(string, output_file)
-    # Se Prince non è disponibile, usa il fallback nativo
-    if @exe_path.nil? || @exe_path.empty? || !command_available?(@exe_path.split(' ').first)
-      logger.info "Prince/wkhtmltopdf non disponibile, usando fallback nativo Ruby per file"
+    if @exe_path.nil? || @exe_path.to_s.strip.empty? || !command_available?
+      logger.info "Prince/wkhtmltopdf non disponibile per file, usando fallback"
       pdf_content = generate_pdf_fallback(string)
       if pdf_content
         File.open(output_file, 'wb') { |f| f.write(pdf_content) }
         return true
-      else
-        return false
       end
+      return false
     end
     
-    path = self.exe_path()
-    # Don't spew errors to the standard out...and set up to take IO 
-    # as input and output
-    path << " --silent - -o '#{output_file}' >> '#{@log_file}' 2>> '#{@log_file}'"
+    path = build_pdf_command
     
-    # Show the command used...
-    logger.info "\n\nPRINCE XML PDF COMMAND"
+    logger.info "\n\nPRINCE XML PDF COMMAND (to file)"
     logger.info path
     logger.info ''
     
     begin
-      # Prepara l'HTML per wkhtmltopdf
-      html_string = prepare_html_for_wkhtmltopdf(string)
-      
-      # Actually call the prince command, and pass the entire data stream back.
       pdf = IO.popen(path, "w+")
-      pdf.puts(html_string)
-      pdf.close
+      pdf.puts(string)
+      pdf.close_write
+      result = pdf.gets(nil)
+      pdf.close_read
       
-      # Verifica che il file sia stato creato e sia un PDF valido
-      if !File.exist?(output_file) || File.size(output_file) < 10
-        logger.error "PRINCE ERROR: File output is missing or too small, usando fallback: #{output_file}"
-        logger.error "HTML input length: #{html_string.length} bytes"
-        # Scrivi gli ultimi 100 caratteri di string nei log per debug
-        logger.error "HTML input preview: #{html_string[0..100]}..."
-        
-        # Usa il fallback per salvare il file
+      if result && !result.empty? && result.start_with?("%PDF") && result.length >= 200
+        File.open(output_file, 'wb') { |f| f.write(result) }
+        return true
+      else
+        logger.error "PRINCE ERROR: Output non valido per file #{output_file}"
         pdf_content = generate_pdf_fallback(string)
         if pdf_content
           File.open(output_file, 'wb') { |f| f.write(pdf_content) }
           return true
-        else
-          return false
         end
+        return false
       end
-      
-      return true
     rescue => e
-      logger.error "PRINCE ERROR: Exception during PDF generation to file: #{e.message}, usando fallback"
+      logger.error "PRINCE ERROR: #{e.message}"
       logger.error e.backtrace.join("\n")
-      
-      # Usa il fallback per salvare il file
       pdf_content = generate_pdf_fallback(string)
       if pdf_content
         File.open(output_file, 'wb') { |f| f.write(pdf_content) }
         return true
-      else
-        return false
       end
+      return false
     end
   end
 
   private
 
-  # Verifica se un comando è disponibile nel sistema
-  def command_available?(command)
-    return false if command.nil? || command.empty?
+  def find_executable
+    exe = ''
     
-    # Rimuovi eventuali parametri dal comando
-    cmd = command.split(' ').first
+    exe = `which prince 2>/dev/null`.chomp rescue ''
     
-    # Su Windows, controlla se il file esiste
+    if exe.empty?
+      exe = `which prince_wrapper.sh 2>/dev/null`.chomp rescue ''
+    end
+    
+    if exe.empty?
+      local_wrapper = File.join(RAILS_ROOT, 'prince_wrapper.sh')
+      exe = local_wrapper if File.exist?(local_wrapper)
+    end
+    
+    # wkhtmltopdf diretto: ha bisogno di xvfb-run per X11 headless
+    if exe.empty?
+      wk = `which wkhtmltopdf 2>/dev/null`.chomp rescue ''
+      exe = "xvfb-run -a #{wk}" unless wk.empty?
+    end
+    
+    exe
+  end
+
+  def command_available?
+    return false if @exe_path.nil? || @exe_path.to_s.strip.empty?
+    
+    cmd = @exe_path.to_s.split(' ').first
+    return false if cmd.nil? || cmd.empty?
+    
     if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-      # Cerca nel PATH
-      ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
-        exe = File.join(path, "#{cmd}.exe")
-        return true if File.executable?(exe)
-      end
-      return false
+      return File.exist?(cmd)
     else
-      # Su Unix/Linux usa which
-      system("which #{cmd} > /dev/null 2>&1")
+      File.executable?(cmd) || (system("which #{cmd} > /dev/null 2>&1") rescue false)
     end
   end
 
-  # Genera un PDF usando solo Ruby (fallback quando Prince non è disponibile)
   def generate_pdf_fallback(html_string)
     logger.info "Generazione PDF fallback nativo Ruby"
     
     begin
-      # Estrai il contenuto testuale dall'HTML
       text_content = extract_text_from_html(html_string)
-      
-      # Crea un PDF semplice ma valido
       pdf_content = create_simple_pdf(text_content)
       
-      logger.info "PDF fallback generato con successo (#{pdf_content.length} byte)"
+      logger.info "PDF fallback generato (#{pdf_content.length} byte)"
       return pdf_content
-      
     rescue => e
-      logger.error "Errore durante la generazione PDF fallback: #{e.message}"
-      # Restituisci un PDF minimo ma valido
+      logger.error "Errore PDF fallback: #{e.message}"
       return create_minimal_pdf("Errore nella generazione del PDF")
     end
   end
 
-  # Estrae il testo dall'HTML rimuovendo i tag
   def extract_text_from_html(html)
     return "Contenuto non disponibile" if html.nil? || html.empty?
     
-    # Controlla se l'HTML contiene solo l'intestazione e il piè di pagina (anteprima vuota)
-    if html.include?('anteprima_risultati') && 
-       html.scan(/<tr>/).size <= 2 && # Solo header della tabella
-       html.include?('width = \'35%\'') # Intestazione tipica
-      
-      return "ANTEPRIMA RISULTATI\n\n" +
-             "L'anteprima risulta vuota.\n\n" +
-             "Possibili cause:\n" +
-             "- Il rapporto selezionato non ha prove associate\n" +
-             "- Le prove non hanno variabili definite\n" +
-             "- I dati non sono stati inseriti completamente\n\n" +
-             "Verificare che il rapporto sia completo e contenga dati di analisi.\n\n" +
-             "Per assistenza contattare l'amministratore del sistema."
-    end
-    
-    # Rimuovi script e style
     text = html.gsub(/<script[^>]*>.*?<\/script>/mi, '')
     text = text.gsub(/<style[^>]*>.*?<\/style>/mi, '')
     
-    # Converti alcuni tag in testo leggibile
     text = text.gsub(/<br\s*\/?>/i, "\n")
     text = text.gsub(/<\/p>/i, "\n\n")
     text = text.gsub(/<\/div>/i, "\n")
     text = text.gsub(/<\/h[1-6]>/i, "\n\n")
     text = text.gsub(/<\/tr>/i, "\n")
-    text = text.gsub(/<\/td>/i, " | ")
-    text = text.gsub(/<\/th>/i, " | ")
+    text = text.gsub(/<\/td>/i, "  |  ")
+    text = text.gsub(/<\/th>/i, "  |  ")
     
-    # Rimuovi tutti i tag HTML rimanenti
     text = text.gsub(/<[^>]+>/, '')
     
-    # Decodifica entità HTML comuni
     text = text.gsub(/&amp;/, '&')
     text = text.gsub(/&lt;/, '<')
     text = text.gsub(/&gt;/, '>')
     text = text.gsub(/&quot;/, '"')
-    text = text.gsub(/&#(\d+);/) { $1.to_i.chr }
+    text = text.gsub(/&#(\d+);/) { $1.to_i.chr rescue '' }
+    text = text.gsub(/&[a-zA-Z]+;/, '')
     
-    # Pulisci spazi multipli e righe vuote eccessive
     text = text.gsub(/[ \t]+/, ' ')
     text = text.gsub(/\n\s*\n\s*\n+/, "\n\n")
     text = text.strip
@@ -290,63 +226,59 @@ class Princely
     return text.empty? ? "Contenuto non disponibile" : text
   end
 
-  # Crea un PDF semplice con il contenuto testuale
+  # Crea un PDF valido con testo posizionato correttamente.
+  # Usa Td relativo: prima riga con posizione assoluta, successive con offset (0, -leading).
   def create_simple_pdf(text_content)
-    # Header PDF
-    pdf = "%PDF-1.4\n"
+    leading = 13
+    font_size = 9
+    margin_left = 40
+    margin_top = 780
+    margin_bottom = 40
+    max_line_len = 105
     
-    # Catalogo (oggetto 1)
-    catalog_obj = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
-    catalog_offset = pdf.length
-    pdf += catalog_obj
+    lines = text_content.to_s.split("\n")
     
-    # Pagine (oggetto 2)
-    pages_obj = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
-    pages_offset = pdf.length
-    pdf += pages_obj
-    
-    # Contenuto della pagina
-    lines = text_content.split("\n")
     content_stream = ""
-    y_position = 750
-    
     content_stream += "BT\n"
-    content_stream += "/F1 12 Tf\n"
+    content_stream += "/F1 #{font_size} Tf\n"
+    content_stream += "#{margin_left} #{margin_top} Td\n"
     
-    lines.each do |line|
-      break if y_position < 50  # Non andare sotto il margine
+    y_position = margin_top
+    
+    lines.each_with_index do |line, idx|
+      break if y_position < margin_bottom
       
-      # Limita la lunghezza delle righe
-      if line.length > 80
-        line = line[0..77] + "..."
-      end
+      line = line[0..(max_line_len - 1)] + "..." if line.to_s.length > max_line_len
       
-      # Escape caratteri speciali
-      escaped_line = line.gsub(/[()\\]/) { |char| "\\#{char}" }
+      escaped = line.to_s
+        .gsub('\\', '\\\\\\\\')
+        .gsub('(', '\\(')
+        .gsub(')', '\\)')
       
-      content_stream += "50 #{y_position} Td\n"
-      content_stream += "(#{escaped_line}) Tj\n"
-      y_position -= 15
+      content_stream += "0 -#{leading} Td\n" if idx > 0
+      content_stream += "(#{escaped}) Tj\n"
+      y_position -= leading
     end
     
     content_stream += "ET\n"
     
-    # Oggetto contenuto (oggetto 4)
-    content_obj = "4 0 obj\n<< /Length #{content_stream.length} >>\nstream\n#{content_stream}\nendstream\nendobj\n"
+    pdf = "%PDF-1.4\n"
+    
+    catalog_offset = pdf.length
+    pdf += "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+    
+    pages_offset = pdf.length
+    pdf += "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+    
     content_offset = pdf.length
-    pdf += content_obj
+    pdf += "4 0 obj\n<< /Length #{content_stream.length} >>\nstream\n#{content_stream}endstream\nendobj\n"
     
-    # Font (oggetto 5)
-    font_obj = "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n"
     font_offset = pdf.length
-    pdf += font_obj
+    pdf += "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n"
     
-    # Pagina (oggetto 3)
-    page_obj = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n"
     page_offset = pdf.length
-    pdf += page_obj
+    pdf += "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n"
     
-    # Tabella xref
     xref_offset = pdf.length
     pdf += "xref\n"
     pdf += "0 6\n"
@@ -357,7 +289,6 @@ class Princely
     pdf += sprintf("%010d 00000 n \n", content_offset)
     pdf += sprintf("%010d 00000 n \n", font_offset)
     
-    # Trailer
     pdf += "trailer\n"
     pdf += "<< /Size 6 /Root 1 0 R >>\n"
     pdf += "startxref\n"
@@ -367,45 +298,8 @@ class Princely
     return pdf
   end
 
-  # Crea un PDF minimo in caso di errore critico
   def create_minimal_pdf(error_message)
-    content = "ERRORE: #{error_message}\n\nImpossibile generare il PDF completo.\nContattare l'amministratore del sistema."
+    content = "ERRORE: #{error_message}\n\nImpossibile generare il PDF.\nContattare l'amministratore del sistema."
     return create_simple_pdf(content)
-  end
-
-  # Prepara l'HTML per wkhtmltopdf convertendo i percorsi e aggiustando la formattazione
-  def prepare_html_for_wkhtmltopdf(html_string)
-    # Rimuovi query parameters dai CSS
-    html_string.gsub!(/href=["']([^:]+\.css\?\d*)["']/i) { |m| 'href="' + $1.split('?').first + '"' }
-    
-    # Converti percorsi relativi in assoluti per le immagini
-    html_string.gsub!(/src=["']([^:]+?)["']/i) { |m| 
-      src_path = $1
-      if src_path.start_with?('/')
-        "src=\"#{RAILS_ROOT}/public#{src_path}\""
-      else
-        "src=\"#{RAILS_ROOT}/public/#{src_path}\""
-      end
-    }
-    
-    # Converti percorsi relativi in assoluti per i CSS
-    html_string.gsub!(/href=["']([^:]+\.css)["']/i) { |m| 
-      css_path = $1
-      if css_path.start_with?('/')
-        "href=\"#{RAILS_ROOT}/public#{css_path}\""
-      else
-        "href=\"#{RAILS_ROOT}/public/#{css_path}\""
-      end
-    }
-    
-    # Rimuovi URL malformati
-    html_string.gsub!(".com:/",".com/")
-    
-    # Aggiungi meta tag per wkhtmltopdf
-    if html_string.include?('<head>')
-      html_string.gsub!(/<head>/, '<head><meta charset="UTF-8">')
-    end
-    
-    return html_string
   end
 end
