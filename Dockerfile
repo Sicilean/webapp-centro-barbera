@@ -121,7 +121,7 @@ RUN echo '#!/bin/bash' > /usr/local/bin/docker-entrypoint.sh && \
     echo '# Attendi che MySQL sia pronto' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'echo "Waiting for MySQL to be ready..."' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'counter=1' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'while ! nc -z 172.19.0.2 3306; do' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'while ! nc -z ${DB_HOST:-db} 3306; do' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  sleep 3' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  counter=$((counter+1))' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  if [ $counter -gt 10 ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
@@ -132,14 +132,14 @@ RUN echo '#!/bin/bash' > /usr/local/bin/docker-entrypoint.sh && \
     echo '' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '# Crea il database se non esiste' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'echo "Creating database..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo 'mysql -h 172.19.0.2 -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS barbera_${RAILS_ENV};" || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo 'mysql -h ${DB_HOST:-db} -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS barbera_${RAILS_ENV};" || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '# Carica lo schema del database se necessario' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'if [ -f /app/barbera_development_complete.sql ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '  table_count=$(mysql -h 172.19.0.2 -u root -ppassword -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '"'"'barbera_${RAILS_ENV}'"'"';" 2>/dev/null | grep -v "COUNT" | tr -d '"'"'[:space:]'"'"' || echo "0")' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  table_count=$(mysql -h ${DB_HOST:-db} -u root -ppassword -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '"'"'barbera_${RAILS_ENV}'"'"';" 2>/dev/null | grep -v "COUNT" | tr -d '"'"'[:space:]'"'"' || echo "0")' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  if [ "$table_count" -eq "0" ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Loading database schema..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/barbera_development_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/barbera_development_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  else' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Database already populated, skipping import"' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  fi' >> /usr/local/bin/docker-entrypoint.sh && \
@@ -147,35 +147,35 @@ RUN echo '#!/bin/bash' > /usr/local/bin/docker-entrypoint.sh && \
     echo '' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '# Carica i dati di importazione se il database è vuoto' >> /usr/local/bin/docker-entrypoint.sh && \
     echo 'if [ -f /app/import_chunk_01_setup.sql ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '  data_count=$(mysql -h 172.19.0.2 -u root -ppassword -e "SELECT COUNT(*) FROM barbera_${RAILS_ENV}.clienti;" 2>/dev/null | grep -v "COUNT" | tr -d '"'"'[:space:]'"'"' || echo "0")' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '  data_count=$(mysql -h ${DB_HOST:-db} -u root -ppassword -e "SELECT COUNT(*) FROM barbera_${RAILS_ENV}.clienti;" 2>/dev/null | grep -v "COUNT" | tr -d '"'"'[:space:]'"'"' || echo "0")' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  if [ "$data_count" -eq "0" ]; then' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Loading import data chunks..."' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 1: Setup..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_01_setup.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_01_setup.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 2: Matrici e Parametri..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_02_matrici_parametri.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_02_matrici_parametri.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 3: Clienti parte 1..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_03_clienti_parte1.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_03_clienti_parte1.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 4: Clienti parte 2..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_04_clienti_parte2.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_04_clienti_parte2.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 5: Clienti parte 3..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_05_clienti_parte3.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_05_clienti_parte3.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 6: Prove complete..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_06_prove_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_06_prove_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 7: Tipologie complete..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_07_tipologie_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_07_tipologie_complete.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 8: Variabili sample..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_08_variabili_sample.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_08_variabili_sample.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 9: UDM items..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_09_udm_items.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_09_udm_items.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 10: Variabili part 1..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_10_variabili_part1.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_10_variabili_part1.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 11: Variabili part 2..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_11_variabili_part2.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_11_variabili_part2.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 12: Variabili part 3..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_12_variabili_part3.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_12_variabili_part3.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Executing chunk 13: Variabili part 4..."' >> /usr/local/bin/docker-entrypoint.sh && \
-    echo '    mysql -h 172.19.0.2 -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_13_variabili_part4.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
+    echo '    mysql -h ${DB_HOST:-db} -u root -ppassword barbera_${RAILS_ENV} < /app/import_chunk_13_variabili_part4.sql || true' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Data import completed successfully!"' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '  else' >> /usr/local/bin/docker-entrypoint.sh && \
     echo '    echo "Database already contains data, skipping import chunks"' >> /usr/local/bin/docker-entrypoint.sh && \
