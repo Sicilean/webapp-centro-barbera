@@ -250,10 +250,7 @@ class Princely
       
       line = line[0..(max_line_len - 1)] + "..." if line.to_s.length > max_line_len
       
-      escaped = line.to_s
-        .gsub('\\', '\\\\\\\\')
-        .gsub('(', '\\(')
-        .gsub(')', '\\)')
+      escaped = line.to_s.gsub('\\', '\\\\\\\\').gsub('(', '\\(').gsub(')', '\\)')
       
       content_stream += "0 -#{leading} Td\n" if idx > 0
       content_stream += "(#{escaped}) Tj\n"
